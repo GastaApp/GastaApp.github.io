@@ -30,15 +30,7 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
-
-      - name: Set GitHub Pages base href
-        run: |
-          sed -i 's|<base href="/" />|<base href="/GastaApp/" />|' wwwroot/index.html
-
-      - name: Verify base href
-        run: |
-          grep '<base href=' wwwroot/index.html
-
+           
       - name: Restore
         run: dotnet restore GastaApp.csproj
 
