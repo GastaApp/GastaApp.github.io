@@ -1,0 +1,92 @@
+﻿name: Deploy Gasta PWA
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Set GitHub Pages base href
+        run: |
+          sed -i 's|<base href="/" />|<base href="/GastaApp/" />|' wwwroot/index.html
+
+      - name: Verify base href
+        run: |
+          grep '<base href=' wwwroot/index.html
+
+      - name: Restore
+        run: dotnet restore GastaApp.csproj
+
+      - name: Publish
+        run: dotnet publish GastaApp.csproj -c Release -o ./publish
+
+      - name: Add .nojekyll
+        run: |
+          touch ./publish/wwwroot/.nojekyll
+
+      - name: Verify published files
+        run: |
+          echo "===== WWWROOT ====="
+          find ./publish/wwwroot -maxdepth 2 -type f | sort
+
+      - name: Verify index
+        run: |
+          test -f ./publish/wwwroot/index.html
+          echo "index.html exists"
+
+      - name: Verify theme.js
+        run: |
+          test -f ./publish/wwwroot/js/theme.js
+          echo "theme.js exists"
+
+      - name: Create 404 fallback
+        run: |
+          cp ./publish/wwwroot/index.html ./publish/wwwroot/404.html
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./publish/wwwroot
+
+  deploy:
+    needs: build
+
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
