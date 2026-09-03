@@ -9,7 +9,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include=".github\workflows\deploy.yml" />
+    <None Include=".github\workflows\deploy.yml">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
@@ -19,6 +21,168 @@
 
   <ItemGroup>
     <ServiceWorker Include="wwwroot\service-worker.js" PublishedContent="wwwroot\service-worker.published.js" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="App.razor">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="Components\AddExpenseSheet.razor">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="Components\AlertView.razor">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="Components\CategoryPicker.razor">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="Components\EditBudgetDialog.razor">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="Components\EditExpenseSheet.razor">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="Components\NumericKeypad.razor">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="Components\SwipeableTransactionRow.razor">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="Pages\AllTransactionsPage.razor">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="Pages\ExpenseListPage.razor">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="Pages\Home.razor">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="Pages\NotFound.razor">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="Pages\Settings.razor">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="Pages\Stats.razor">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\css\app.css">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\css\theme.css">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\favicon.png">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\gasta.jpeg">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\gasta.png">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\icon-192.png">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\icon-512.png">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\images\categories\eatout.png">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\images\categories\gifts.png">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\images\categories\grab.png">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\images\categories\groceries.png">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\images\categories\health.png">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\images\categories\lazadacat.png">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\images\categories\shopeecat.png">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\images\categories\transpo.png">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\images\payments\cash.svg">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\images\payments\creditcard.svg">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\images\payments\debitcard.svg">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\images\payments\gcash.svg">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\images\payments\gotyme.svg">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\images\payments\maribank.svg">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\images\payments\maya.svg">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\images\payments\shopeepay.svg">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\images\pepecry.png">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\index.html">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\js\db.js">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\js\pointer.js">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\js\theme.js">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\lib\bootstrap\dist\css\bootstrap-grid.css">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.css">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.css">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\lib\bootstrap\dist\css\bootstrap.css">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\lib\bootstrap\dist\js\bootstrap.js">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\manifest.webmanifest">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\service-worker.js">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\service-worker.published.js">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+    <Content Update="_Imports.razor">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Pages\ExpenseListPage.razor.css">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
