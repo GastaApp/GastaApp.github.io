@@ -33,7 +33,7 @@ jobs:
 
       - name: Set GitHub Pages base href
         run: |
-          sed -i 's|<base href="/" />|' wwwroot/index.html
+          sed -i 's|<base href="/" />|<base href="/GastaApp/" />|' wwwroot/index.html
 
       - name: Verify base href
         run: |
