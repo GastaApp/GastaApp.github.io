@@ -1,77 +1,79 @@
-.page {
-    position: relative;
+.app-content {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 20px;
+    padding-bottom: 110px; /* clears the full-width nav so content never hides behind it */
+}
+
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-width: 480px;
+    margin: 0 auto;
+    background: var(--nav-bg);
+    border-radius: 0;
+    box-shadow: none;
     display: flex;
-    flex-direction: column;
-}
+    justify-content: space-around;
+    align-items: center;
+    padding: 16px 24px calc(16px + env(safe-area-inset-bottom, 0px));
+ }
 
-main {
-    flex: 1;
-}
-
-.sidebar {
-    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
-}
-
-.top-row {
-    background-color: #f7f7f7;
-    border-bottom: 1px solid #d6d5d5;
-    justify-content: flex-end;
-    height: 3.5rem;
+/* ::deep is required for every rule below. <NavLink> is a separate Razor
+   component, so the <a> it renders never receives MainLayout's own CSS
+   isolation scope attribute — a plain scoped selector like ".nav-item"
+   compiles to ".nav-item[b-xxxx]" and silently never matches that <a>.
+   ::deep tells the compiler not to require the scope attribute here. */
+::deep .nav-item {
     display: flex;
     align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    border-radius: 16px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    opacity: 0.6;
+    transition: background 0.2s ease, color 0.2s ease, opacity 0.2s ease;
 }
 
-    .top-row ::deep a, .top-row ::deep .btn-link {
-        white-space: nowrap;
-        margin-left: 1.5rem;
-        text-decoration: none;
+    ::deep .nav-item svg {
+        transition: transform 0.2s ease;
     }
 
-    .top-row ::deep a:hover, .top-row ::deep .btn-link:hover {
-        text-decoration: underline;
+    /* Blazor's NavLink applies "active" automatically. Icon color comes for
+   free since the SVGs use stroke="currentColor" — no separate icon-color
+   logic needed. Excludes the center button, which has its own treatment. */
+    ::deep .nav-item.active:not(.nav-item-main) {
+        opacity: 1;
+        color: white;
+        background: var(--nav-active-bg);
     }
 
-    .top-row ::deep a:first-child {
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
+        ::deep .nav-item.active:not(.nav-item-main) svg {
+            transform: translateY(-1px);
+        }
 
-@media (max-width: 640.98px) {
-    .top-row {
-        justify-content: space-between;
-    }
-
-    .top-row ::deep a, .top-row ::deep .btn-link {
-        margin-left: 0;
-    }
+::deep .nav-item-main {
+    background: linear-gradient(150deg, var(--color-primary), var(--color-primary-dark));
+    color: white !important;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    opacity: 1;
+    box-shadow: 0 6px 14px rgba(91, 79, 232, 0.4);
 }
 
-@media (min-width: 641px) {
-    .page {
-        flex-direction: row;
+    ::deep .nav-item-main .peso-glyph {
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: 21px;
+        line-height: 1;
     }
 
-    .sidebar {
-        width: 250px;
-        height: 100vh;
-        position: sticky;
-        top: 0;
+    ::deep .nav-item-main.active {
+        box-shadow: 0 6px 18px rgba(91, 79, 232, 0.55);
     }
-
-    .top-row {
-        position: sticky;
-        top: 0;
-        z-index: 1;
-    }
-
-    .top-row.auth ::deep a:first-child {
-        flex: 1;
-        text-align: right;
-        width: 0;
-    }
-
-    .top-row, article {
-        padding-left: 2rem !important;
-        padding-right: 1.5rem !important;
-    }
-}

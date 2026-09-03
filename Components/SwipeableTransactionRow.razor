@@ -1,0 +1,114 @@
+@* Usage: <SwipeableTransactionRow Item="item" OnTap="OpenEdit" OnDelete="DeleteExpense" /> *@
+@inject IJSRuntime JS
+
+<div class="transaction-row-wrap">
+    <div class="delete-action" @onclick="() => OnDelete.InvokeAsync(Item.Id)">🗑 Delete</div>
+
+    <div class="transaction-row" @ref="_rowRef"
+         style="transform:translateX(@(_offset.ToString(System.Globalization.CultureInfo.InvariantCulture))px);"
+         @onpointerdown="OnPointerDown"
+         @onpointermove="OnPointerMove"
+         @onpointerup="OnPointerUp"
+         @onpointercancel="OnPointerCancel"
+         @onclick="OnClick">
+        <div class="tx-icon" style="background:@Item.CategoryColorKey;">
+            <img src="images/categories/@(Item.CategoryLogo).png" />
+        </div>
+        <div class="tx-info">
+            <span class="tx-category">@Item.CategoryName</span>
+            @if (!string.IsNullOrWhiteSpace(Item.Notes))
+            {
+                <span class="tx-notes">@Item.Notes</span>
+            }
+            <span class="tx-date">@Item.Date.ToString("MMM d")</span>
+        </div>
+        <strong class="tx-amount">@Item.Amount.ToString("₱#,##0.00")</strong>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public GastaApp.Services.ExpenseListItem Item { get; set; } = default!;
+    [Parameter] public EventCallback<int> OnTap { get; set; }
+    [Parameter] public EventCallback<int> OnDelete { get; set; }
+
+    private ElementReference _rowRef;
+    private double _offset;
+    private double _startX;
+    private double _startOffset;
+    private bool _dragging;
+    private bool _dragMoved;
+
+    private const double RevealOffset = -84;   // matches .delete-action width
+    private const double DragThreshold = 10;   // px before it counts as a real drag
+    private const double SnapThreshold = 40;   // px dragged before snapping fully open/closed
+
+    private async Task OnPointerDown(PointerEventArgs e)
+    {
+        _dragging = true;
+        _startX = e.ClientX;
+        _startOffset = _offset;
+        _dragMoved = false;
+
+        // Keeps the drag tracking smooth if the finger moves fast/far — not the fix
+        // for tap reliability (that's the native click event below), just makes the
+        // swipe gesture itself feel consistent regardless of what's visually under
+        // the finger as it moves.
+        await JS.InvokeVoidAsync("gastaPointer.capture", _rowRef, e.PointerId);
+    }
+
+    private void OnPointerMove(PointerEventArgs e)
+    {
+        if (!_dragging) return;
+
+        var dx = e.ClientX - _startX;
+        if (Math.Abs(dx) > DragThreshold) _dragMoved = true;
+
+        _offset = Math.Clamp(_startOffset + dx, RevealOffset, 0);
+    }
+
+    private void OnPointerUp(PointerEventArgs e)
+    {
+        if (!_dragging) return;
+        _dragging = false;
+
+        if (_dragMoved)
+        {
+            // Snap fully open or closed based on how far it was dragged. If this
+            // WASN'T a drag, deliberately do nothing here — the browser's native
+            // click event (fired right after, for a plain tap) handles that case
+            // below in OnClick. Native click already correctly distinguishes a tap
+            // from a scroll/drag on real touch hardware; re-deriving that ourselves
+            // from raw pointer timing/distance is exactly what kept failing before.
+            _offset = _offset < -SnapThreshold ? RevealOffset : 0;
+        }
+    }
+
+    private async Task OnClick()
+    {
+        // A genuine drag was already handled in OnPointerUp above. Browsers can
+        // still fire a trailing click after a small drag in some cases, so guard
+        // against double-handling it here.
+        if (_dragMoved)
+        {
+            _dragMoved = false;
+            return;
+        }
+
+        if (_offset < -1)
+        {
+            // Row is currently revealed — a tap on it just closes it again,
+            // matching native SwipeView's "tap elsewhere to close" behavior.
+            _offset = 0;
+        }
+        else
+        {
+            await OnTap.InvokeAsync(Item.Id);
+        }
+    }
+
+    private void OnPointerCancel()
+    {
+        if (_dragging) _offset = _startOffset;
+        _dragging = false;
+    }
+}

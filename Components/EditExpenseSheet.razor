@@ -1,0 +1,161 @@
+@* Usage: <EditExpenseSheet @bind-IsOpen="ShowEdit" ExpenseId="id" OnSaved="LoadAsync" /> *@
+@inject GastaApp.Data.Repositories.IExpenseRepository ExpenseRepository
+@inject GastaApp.Data.Repositories.ICategoryRepository CategoryRepository
+@inject GastaApp.Data.Repositories.IPaymentMethodRepository PaymentMethodRepository
+
+<div class="sheet-scrim @(IsOpen ? "open" : "")" @onclick="Cancel"></div>
+<div class="sheet-panel @(IsOpen ? "open" : "")" @onclick:stopPropagation="true">
+    @if (_loaded)
+    {
+        <div class="sheet-header">
+            <span class="sheet-title">Edit Expense</span>
+        </div>
+
+        <label class="field-label">Date</label>
+        <input class="field-input" type="date" value="@Date.ToString("yyyy-MM-dd")"
+               @onchange="OnDateChanged" />
+
+        <label class="field-label">Category</label>
+        <div class="field-input tappable category-field" @onclick="() => ShowCategoryPicker = true">
+            @if (SelectedCategory is not null)
+            {
+                <span class="field-left">
+                    <img src="images/categories/@(SelectedCategory.LogoImage).png" class="inline-icon" />
+                    <span>@SelectedCategory.Name</span>
+                </span>
+            }
+            else
+            {
+                <span class="placeholder-text">Select category</span>
+            }
+            <span class="chevron">&#10095;</span>
+        </div>
+
+        <label class="field-label">Amount</label>
+        <div class="field-input tappable" @onclick="() => ShowKeypad = true">
+            @if (Amount <= 0)
+            {
+                <span class="placeholder-text">Tap to enter amount</span>
+            }
+            else
+            {
+                <span>@Amount.ToString("₱#,##0.00")</span>
+            }
+            <span class="chevron">&#10095;</span>
+        </div>
+
+        <label class="field-label">Payment Method</label>
+        <div class="chip-wrap">
+            @foreach (var m in PaymentMethods)
+            {
+                <div class="pm-chip @(SelectedPaymentMethodId == m.Id ? "selected" : "")"
+                     @onclick="() => SelectedPaymentMethodId = m.Id">
+                    <img src="images/payments/@(m.LogoImage).svg" />
+                    @if (SelectedPaymentMethodId == m.Id)
+                    {
+                        <span class="check-badge">&#10003;</span>
+                    }
+                </div>
+            }
+        </div>
+
+        <label class="field-label">Notes</label>
+        <textarea class="field-input notes" @bind="Notes" placeholder="Optional note..."></textarea>
+
+        <div class="action-row">
+            <button class="cancel-button" @onclick="Cancel">Cancel</button>
+            <button class="save-button" disabled="@(!CanSave)" @onclick="Save">Save</button>
+        </div>
+    }
+</div>
+
+<NumericKeypad @bind-IsOpen="ShowKeypad" InitialValue="Amount" OnConfirmed="v => Amount = v" />
+
+<CategoryPicker @bind-IsOpen="ShowCategoryPicker" Categories="Categories"
+                SelectedCategoryId="SelectedCategoryId" OnSelected="id => SelectedCategoryId = id" />
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public int ExpenseId { get; set; }
+    [Parameter] public EventCallback OnSaved { get; set; }
+
+    private bool _wasOpen;
+    private bool _loaded;
+    private bool ShowKeypad;
+    private bool ShowCategoryPicker;
+
+    private DateTime Date = DateTime.Now;
+    private decimal Amount;
+    private int? SelectedCategoryId;
+    private int? SelectedPaymentMethodId;
+    private string Notes = "";
+
+    private List<GastaApp.Models.Category> Categories = new();
+    private List<GastaApp.Models.PaymentMethod> PaymentMethods = new();
+
+    private GastaApp.Models.Category? SelectedCategory =>
+        Categories.FirstOrDefault(c => c.Id == SelectedCategoryId);
+
+    private bool CanSave => Amount > 0 && SelectedCategoryId.HasValue && SelectedPaymentMethodId.HasValue;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IsOpen && !_wasOpen)
+        {
+            _loaded = false;
+            ShowKeypad = false;
+            ShowCategoryPicker = false;
+
+            if (Categories.Count == 0)
+                Categories = await CategoryRepository.GetActiveOrderedAsync();
+            if (PaymentMethods.Count == 0)
+                PaymentMethods = await PaymentMethodRepository.GetActiveOrderedAsync();
+
+            var expense = await ExpenseRepository.GetByIdAsync(ExpenseId);
+            if (expense is not null)
+            {
+                Date = expense.Date;
+                Amount = expense.Amount;
+                SelectedCategoryId = expense.CategoryId;
+                SelectedPaymentMethodId = expense.PaymentMethodId;
+                Notes = expense.Notes ?? "";
+            }
+
+            _loaded = true;
+        }
+        _wasOpen = IsOpen;
+    }
+
+    private void OnDateChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var d))
+            Date = d;
+    }
+
+    private async Task Save()
+    {
+        if (!CanSave) return;
+
+        var expense = await ExpenseRepository.GetByIdAsync(ExpenseId)
+                       ?? new GastaApp.Models.Expense { Id = ExpenseId };
+
+        expense.Date = Date;
+        expense.Amount = Amount;
+        expense.CategoryId = SelectedCategoryId!.Value;
+        expense.PaymentMethodId = SelectedPaymentMethodId!.Value;
+        expense.Notes = string.IsNullOrWhiteSpace(Notes) ? null : Notes;
+
+        await ExpenseRepository.SaveAsync(expense);
+        await OnSaved.InvokeAsync();
+        await Close();
+    }
+
+    private async Task Cancel() => await Close();
+
+    private async Task Close()
+    {
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+    }
+}

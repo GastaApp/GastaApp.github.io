@@ -1,0 +1,233 @@
+@* Reusable calculator keypad. Hosting page places this once, e.g.:
+   <NumericKeypad @bind-IsOpen="ShowKeypad" InitialValue="Amount" OnConfirmed="OnAmountConfirmed" />
+   It renders its own scrim + sliding sheet, CSS-only (no JS interop). *@
+
+<div class="keypad-scrim @(IsOpen ? "open" : "")" @onclick="OnScrimTapped"></div>
+<div class="keypad-sheet @(IsOpen ? "open" : "")" @onclick:stopPropagation="true">
+    <div class="keypad-history">@_historyDisplay</div>
+    <div class="keypad-display">
+        @if (!string.IsNullOrEmpty(PendingOperatorSymbol))
+        {
+            <span class="pending-op">@PendingOperatorSymbol</span>
+        }
+        <span class="value">@_display</span>
+    </div>
+
+    <div class="keypad-grid">
+        <button class="key digit" @onclick='() => PressDigit("7")'>7</button>
+        <button class="key digit" @onclick='() => PressDigit("8")'>8</button>
+        <button class="key digit" @onclick='() => PressDigit("9")'>9</button>
+        <button class="key op" @onclick="() => PressOperator('÷')">÷</button>
+
+        <button class="key digit" @onclick='() => PressDigit("4")'>4</button>
+        <button class="key digit" @onclick='() => PressDigit("5")'>5</button>
+        <button class="key digit" @onclick='() => PressDigit("6")'>6</button>
+        <button class="key op" @onclick="() => PressOperator('×')">×</button>
+
+        <button class="key digit" @onclick='() => PressDigit("1")'>1</button>
+        <button class="key digit" @onclick='() => PressDigit("2")'>2</button>
+        <button class="key digit" @onclick='() => PressDigit("3")'>3</button>
+        <button class="key op" @onclick="() => PressOperator('-')">−</button>
+
+        <button class="key clear" @onclick="Clear">C</button>
+        <button class="key digit" @onclick='() => PressDigit("0")'>0</button>
+        <button class="key digit" @onclick="PressDecimal">.</button>
+        <button class="key op" @onclick="() => PressOperator('+')">+</button>
+
+        <button class="key backspace" @onclick="Backspace">⌫</button>
+        <button class="key equals" @onclick="OnEqualsPressed">=</button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public decimal InitialValue { get; set; }
+    [Parameter] public EventCallback<decimal> OnConfirmed { get; set; }
+
+    private bool _wasOpen;
+    private string _display = "0";
+    private readonly List<string> _historyTokens = new();
+    private string _historyDisplay = "";
+    private decimal? _operand1;
+    private char? _pendingOperator;
+    private bool _newEntry = true;
+
+    private string PendingOperatorSymbol => _pendingOperator?.ToString() ?? "";
+
+    protected override void OnParametersSet()
+    {
+        // Seed the display fresh every time the sheet transitions closed -> open,
+        // mirroring MAUI's per-open Keypad instance behavior.
+        if (IsOpen && !_wasOpen)
+        {
+            _display = FormatNumber(InitialValue);
+            _historyTokens.Clear();
+            _historyDisplay = "";
+            _operand1 = null;
+            _pendingOperator = null;
+            _newEntry = true;
+        }
+        _wasOpen = IsOpen;
+    }
+
+    private void PressDigit(string d)
+    {
+        if (_newEntry)
+        {
+            if (!_pendingOperator.HasValue)
+            {
+                // Starting a brand-new expression with nothing pending — clear the trail.
+                _historyTokens.Clear();
+                _historyDisplay = "";
+            }
+            _display = d;
+            _newEntry = false;
+        }
+        else if (_display == "0")
+        {
+            _display = d;
+        }
+        else
+        {
+            _display += d;
+        }
+    }
+
+    private void PressDecimal()
+    {
+        if (_newEntry)
+        {
+            _display = "0.";
+            _newEntry = false;
+        }
+        else if (!_display.Contains('.'))
+        {
+            _display += ".";
+        }
+    }
+
+    private void PressOperator(char op)
+    {
+        if (_pendingOperator.HasValue && !_newEntry)
+        {
+            // A second operand was typed — record its raw value in the trail, then
+            // evaluate internally (running total) before starting the next term.
+            _historyTokens.Add(FormatNumber(ParseDisplay()));
+            Evaluate();
+        }
+        else if (!_operand1.HasValue)
+        {
+            // Very first number in the whole expression.
+            _operand1 = ParseDisplay();
+            _historyTokens.Add(FormatNumber(_operand1.Value));
+        }
+        else if (_historyTokens.Count > 0)
+        {
+            // Operator pressed again with no new digits typed — just swap it.
+            _historyTokens.RemoveAt(_historyTokens.Count - 1);
+        }
+
+        _historyTokens.Add(op.ToString());
+        _historyDisplay = string.Join(" ", _historyTokens);
+
+        _pendingOperator = op;
+        _newEntry = true;
+    }
+
+    private void Evaluate()
+    {
+        if (_operand1.HasValue && _pendingOperator.HasValue)
+        {
+            var operand2 = ParseDisplay();
+            var result = _pendingOperator.Value switch
+            {
+                '+' => _operand1.Value + operand2,
+                '-' => _operand1.Value - operand2,
+                '×' => _operand1.Value * operand2,
+                '÷' => operand2 == 0 ? _operand1.Value : _operand1.Value / operand2,
+                _ => operand2
+            };
+            _display = FormatNumber(result);
+            _operand1 = result;
+            _pendingOperator = null;
+            _newEntry = true;
+        }
+    }
+
+    private async Task OnEqualsPressed()
+    {
+        // Double duty, same as MAUI: evaluate-and-stay-open if a pending op + typed
+        // second operand exist; otherwise confirm-and-close.
+        if (_pendingOperator.HasValue && !_newEntry)
+        {
+            _historyTokens.Add(FormatNumber(ParseDisplay()));
+            Evaluate();
+            _historyTokens.Add("=");
+            _historyDisplay = string.Join(" ", _historyTokens);
+        }
+        else
+        {
+            await ConfirmAndClose();
+        }
+    }
+
+    private async Task OnScrimTapped()
+    {
+        // Tapping outside the keypad commits the typed amount instead of discarding it.
+        await ConfirmAndClose();
+    }
+
+    private async Task ConfirmAndClose()
+    {
+        decimal value;
+        if (_pendingOperator.HasValue && !_newEntry)
+        {
+            Evaluate();
+            value = ParseDisplay();
+        }
+        else if (_operand1.HasValue && _pendingOperator.HasValue)
+        {
+            // Operator pressed but no second operand typed yet — use the value before it.
+            value = _operand1.Value;
+        }
+        else
+        {
+            value = ParseDisplay();
+        }
+
+        await OnConfirmed.InvokeAsync(value);
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+    }
+
+    private void Clear()
+    {
+        _display = "0";
+        _historyTokens.Clear();
+        _historyDisplay = "";
+        _operand1 = null;
+        _pendingOperator = null;
+        _newEntry = true;
+    }
+
+    private void Backspace()
+    {
+        if (_newEntry) return;
+
+        if (_display.Length <= 1 || (_display.Length == 2 && _display[0] == '-'))
+        {
+            _display = "0";
+            _newEntry = true;
+        }
+        else
+        {
+            _display = _display[..^1];
+        }
+    }
+
+    private decimal ParseDisplay() => decimal.TryParse(_display, out var d) ? d : 0;
+
+    private static string FormatNumber(decimal value) =>
+        value % 1 == 0 ? value.ToString("0") : value.ToString("0.##");
+}

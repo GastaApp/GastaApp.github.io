@@ -1,0 +1,71 @@
+@* Usage from Home.razor:
+   <EditBudgetDialog @bind-IsOpen="ShowEditBudget" Year="SelectedMonth.Year" Month="SelectedMonth.Month"
+                      CurrentBudget="Budget" OnSaved="LoadAsync" />
+*@
+@inject GastaApp.Services.ExpenseSummaryService SummaryService
+
+<div class="dialog-scrim @(IsOpen ? "open" : "")" @onclick="Cancel"></div>
+<div class="dialog-card @(IsOpen ? "open" : "")" @onclick:stopPropagation="true">
+    <h3 class="dialog-title">Set Your Monthly Budget</h3>
+
+    <div class="graphic-display">
+        <img src="images/pepecry.png" />
+
+        <span>
+            Syempre dapat may budget ka hindi yung
+            si gastos ka lang ng gastos diba?
+        </span>
+    </div>
+
+    <label class="field-label">Budget Amount</label> 
+    <div class="field-input tappable" @onclick="() => ShowKeypad = true">
+        @Amount.ToString("₱#,##0.00")
+        <span style="color:var(--text-secondary);font-weight:400;">&#10095;</span>
+    </div>
+
+    <div class="action-row">
+        <button class="cancel-button" @onclick="Cancel">Cancel</button>
+        <button class="save-button" @onclick="Save">Save</button>
+    </div>
+</div>
+
+<NumericKeypad @bind-IsOpen="ShowKeypad" InitialValue="Amount" OnConfirmed="v => Amount = v" />
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public int Year { get; set; }
+    [Parameter] public int Month { get; set; }
+    [Parameter] public decimal CurrentBudget { get; set; }
+    [Parameter] public EventCallback OnSaved { get; set; }
+
+    private bool _wasOpen;
+    private bool ShowKeypad;
+    private decimal Amount;
+
+    protected override void OnParametersSet()
+    {
+        if (IsOpen && !_wasOpen)
+        {
+            // Seed with the current month's budget every time the dialog opens fresh.
+            Amount = CurrentBudget;
+            ShowKeypad = false;
+        }
+        _wasOpen = IsOpen;
+    }
+
+    private async Task Save()
+    {
+        await SummaryService.SetMonthlyBudgetAsync(Year, Month, Amount);
+        await OnSaved.InvokeAsync();
+        await Close();
+    }
+
+    private async Task Cancel() => await Close();
+
+    private async Task Close()
+    {
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+    }
+}

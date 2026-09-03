@@ -1,0 +1,78 @@
+.header-bar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px 16px;
+    border-radius: 0 0 20px 20px;
+    margin: -20px -20px 0;
+}
+
+.icon-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.35);
+    color: var(--text-primary);
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.header-bar > .icon-btn:first-child {
+    position: absolute;
+    left: 16px;
+}
+
+.header-logo {
+    height: 26px;
+    max-width: 60%;
+    object-fit: contain;
+}
+
+.header-actions {
+    position: absolute;
+    right: 16px;
+    display: flex;
+    gap: 8px;
+}
+
+.total-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-card);
+    border-radius: 16px;
+    padding: 16px;
+    margin: 16px 0;
+}
+
+.total-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.total-amount {
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.transaction-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.empty-state {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 24px 0;
+    font-size: 13px;
+}

@@ -1,0 +1,116 @@
+.dialog-scrim {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+    z-index: 30;
+}
+
+    .dialog-scrim.open {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+.dialog-card {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: min(88vw, 340px);
+    background: var(--surface);
+    border-radius: 20px;
+    padding: 22px 20px;
+    transform: translate(-50%, -50%) scale(0.85);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.25s ease, opacity 0.25s ease;
+    z-index: 31;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+}
+
+    .dialog-card.open {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+.graphic-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom:16px;
+}
+
+    .graphic-display img {
+        height: 64px;
+        width: 70px;
+    }
+
+    .graphic-display span {
+        text-align: center;
+        font-size: 0.813rem;
+        color: var(--text-secondary);
+        margin-bottom: 16px;
+    }
+
+.dialog-title {
+    margin: 0 0 14px;
+    font-size: 16px;
+    font-weight: bold;
+    text-align:center;
+}
+
+
+.field-label {
+    display: block;
+    font-size: 0.813rem;
+    color: var(--text-secondary);
+}
+
+.field-input {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    background: var(--surface-alt);
+    font-size: 16px;
+    font-weight: 600;
+    font-family: var(--font-display);
+}
+
+    .field-input.tappable {
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+    }
+
+.action-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 32px;
+}
+
+.save-button, .cancel-button {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 14px;
+     font-size: 14px;
+    cursor: pointer;
+    font-family: var(--font-display);
+    border: 1px solid var(--border);
+}
+
+.save-button {
+    background: var(--color-primary);
+    color: white;
+}
+
+.cancel-button {
+    background: var(--surface-alt);
+    color: var(--text-secondary);
+}

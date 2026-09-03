@@ -1,0 +1,72 @@
+@page "/alltransactions"
+@using GastaApp.Components
+@inject GastaApp.Services.ExpenseSummaryService SummaryService
+@inject GastaApp.Data.Repositories.IExpenseRepository ExpenseRepository
+@inject GastaApp.Services.AlertService Alert
+@inject NavigationManager Nav
+
+<div class="header-bar">
+    <span class="back-arrow" @onclick="GoBack">&#10094;</span>
+    <span class="header-title">All Transactions</span>
+</div>
+
+<div class="month-switcher">
+    <span @onclick="PreviousMonth">&#10094;</span>
+    <strong>@SelectedMonth.ToString("MMMM yyyy").ToUpper()</strong>
+    <span @onclick="NextMonth">&#10095;</span>
+</div>
+
+<div class="total-card">
+    <span class="total-label">TOTAL THIS MONTH</span>
+    <span class="total-amount">@Total.ToString("₱#,##0.00")</span>
+</div>
+
+<div class="transaction-list">
+    @if (Transactions.Count == 0)
+    {
+        <div class="empty-state">No transactions for this month.</div>
+    }
+    @foreach (var item in Transactions)
+    {
+        <SwipeableTransactionRow Item="item" OnTap="OpenEdit" OnDelete="DeleteExpense" />
+    }
+</div>
+
+<EditExpenseSheet @bind-IsOpen="ShowEdit" ExpenseId="EditingExpenseId" OnSaved="LoadAsync" />
+
+@code {
+    private DateTime SelectedMonth = DateTime.Now;
+    private List<GastaApp.Services.ExpenseListItem> Transactions = new();
+    private decimal Total;
+
+    private bool ShowEdit;
+    private int EditingExpenseId;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        Transactions = await SummaryService.GetAllTransactionsForMonthAsync(SelectedMonth.Year, SelectedMonth.Month);
+        Total = Transactions.Sum(t => t.Amount);
+    }
+
+    private async Task PreviousMonth() { SelectedMonth = SelectedMonth.AddMonths(-1); await LoadAsync(); }
+    private async Task NextMonth() { SelectedMonth = SelectedMonth.AddMonths(1); await LoadAsync(); }
+
+    private void OpenEdit(int expenseId)
+    {
+        EditingExpenseId = expenseId;
+        ShowEdit = true;
+    }
+
+    private async Task DeleteExpense(int expenseId)
+    {
+        // var confirmed = await Alert.ShowConfirmAsync("Delete this transaction?", "Confirm Delete");
+        // if (!confirmed) return;
+
+        await ExpenseRepository.DeleteAsync(expenseId);
+        await LoadAsync();
+    }
+
+    private void GoBack() => Nav.NavigateTo("stats");
+}

@@ -8,22 +8,40 @@
     <base href="/" />
     <link rel="preload" id="webassembly" />
     <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="css/theme.css" />
     <link rel="stylesheet" href="css/app.css" />
-    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="icon" type="image/png" href="gasta.png" />
     <link href="GastaApp.styles.css" rel="stylesheet" />
     <link href="manifest.webmanifest" rel="manifest" />
-    <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png" />
-    <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="gasta.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="gasta.png" />
     <script type="importmap"></script>
 </head>
 
 <body>
-    <div id="app">
+    <!--<div id="app">
         <svg class="loading-progress">
             <circle r="40%" cx="50%" cy="50%" />
             <circle r="40%" cx="50%" cy="50%" />
         </svg>
         <div class="loading-progress-text"></div>
+    </div>-->
+    <div id="app">
+        <div class="loading-screen">
+            <div class="loading-ring-wrap">
+                <svg class="loading-ring" viewBox="0 0 120 120">
+                    <circle class="loading-ring-track" cx="60" cy="60" r="54" />
+                    <circle class="loading-ring-bar" cx="60" cy="60" r="54" />
+                </svg>
+                <div class="loading-video-wrap">
+                    <video class="loading-video" autoplay loop muted playsinline>
+                        <source src="videos/gasta-loading-transparent.webm" type="video/webm" />
+                    </video>
+                </div>
+            </div>
+            <div class="loading-percentage"></div>
+            <div class="loading-text">Loading Gasta<span class="loading-dots"><span></span><span></span><span></span></span></div>
+        </div>
     </div>
 
     <div id="blazor-error-ui">
@@ -34,7 +52,24 @@
     <script src="js/theme.js"></script>
     <script src="js/pointer.js"></script>
     <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
-    <script>navigator.serviceWorker.register('service-worker.js', { updateViaCache: 'none' });</script>
+
+    <script>
+        navigator.serviceWorker.register('service-worker.js', { updateViaCache: 'none' });
+
+        // Without this, even after the new worker takes over (skipWaiting +
+        // clients.claim in service-worker.published.js), an already-open tab keeps
+        // running on the old cached JS/WASM/CSS already loaded into memory — this
+        // reloads once, automatically, when control actually changes hands, so the
+        // tab picks up the new version instead of sitting in a stale/mixed state.
+        // hasReloaded guards against a reload loop, since controllerchange can in
+        // some browsers fire more than once for a single update.
+        let hasReloaded = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (hasReloaded) return;
+            hasReloaded = true;
+            window.location.reload();
+        });
+    </script>
 </body>
 
 </html>

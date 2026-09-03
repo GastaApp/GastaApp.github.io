@@ -1,0 +1,40 @@
+@* Host exactly ONE of these at the app root, e.g. in Layout/MainLayout.razor:
+   <AlertView />
+   Every page/component then injects AlertService directly — no per-page hosting needed,
+   since this is a singleton dialog (same as MAUI's AlertService/AlertView pattern). *@
+@implements IDisposable
+@inject GastaApp.Services.AlertService AlertService
+
+<div class="alert-scrim @(AlertService.IsOpen ? "open" : "")" @onclick="() => AlertService.Respond(false)"></div>
+<div class="alert-card @(AlertService.IsOpen ? "open" : "")" @onclick:stopPropagation="true">
+    @if (!string.IsNullOrEmpty(AlertService.Title))
+    {
+        <div class="alert-title">@AlertService.Title</div>
+    }
+    <div class="alert-message">@AlertService.Message</div>
+    <div class="alert-actions">
+        @if (AlertService.IsConfirm)
+        {
+            <button class="alert-btn secondary" @onclick="() => AlertService.Respond(false)">
+                @AlertService.SecondaryText
+            </button>
+        }
+        <button class="alert-btn primary" @onclick="() => AlertService.Respond(true)">
+            @AlertService.PrimaryText
+        </button>
+    </div>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        AlertService.OnChange += Refresh;
+    }
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        AlertService.OnChange -= Refresh;
+    }
+}

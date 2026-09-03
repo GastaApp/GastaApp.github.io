@@ -1,0 +1,99 @@
+@page "/stats"
+@using GastaApp.Components
+@inject GastaApp.Services.ExpenseSummaryService SummaryService
+@inject GastaApp.Data.Repositories.IExpenseRepository ExpenseRepository
+@inject GastaApp.Services.AlertService Alert
+@inject NavigationManager Nav
+ 
+<PageTitle>Gasta - Statistics</PageTitle>
+
+<div class="header">
+    <span class="screen-title">STATISTICS</span>
+</div>
+
+<div class="card total-spent-card">
+    <span class="screen-title">TOTAL SPENT THIS MONTH</span>
+    <div class="amount-row">
+        <span class="amount-display">@Comparison.Current.ToString("₱#,##0.00")</span>
+        @if (Comparison.Previous > 0)
+        {
+            <span class="compare-badge @(Comparison.IsIncrease ? "increase" : "decrease")">
+                @(Comparison.IsIncrease ? "▲" : "▼") @Comparison.PercentChange.ToString("0.#")%
+            </span>
+        }
+    </div>
+    <span class="caption">vs @Comparison.Previous.ToString("₱#,##0.00") last month</span>
+</div>
+
+<div class="section-title">Last 7 Days</div>
+<div class="bar-chart">
+    @foreach (var point in DailySpend)
+    {
+        var isToday = point.Date == DateTime.Today;
+        var heightPct = MaxDay <= 0 ? 0 : (double)(point.Amount / MaxDay) * 100;
+        <div class="bar-column">
+            <span class="bar-amount">@(point.Amount > 0 ? point.Amount.ToString("₱#,##0") : "")</span>
+            <div class="bar-track">
+                <div class="bar-fill @(isToday ? "today" : "")" style="height:@(heightPct)%;"></div>
+            </div>
+            <span class="bar-label @(isToday ? "today-label" : "")">@(isToday ? "Today" : point.Date.ToString("ddd"))</span>
+        </div>
+    }
+</div>
+
+<div class="section-header">
+    <span class="section-title">Recent Transactions</span>
+    <span class="see-all" @onclick="GoToAllTransactions">See All</span>
+</div>
+
+<div class="transaction-list">
+    @if (RecentTransactions.Count == 0)
+    {
+        <div class="empty-state">No transactions yet.</div>
+    }
+    @foreach (var item in RecentTransactions)
+    {
+        <SwipeableTransactionRow Item="item" OnTap="OpenEdit" OnDelete="DeleteExpense" />
+    }
+</div>
+
+<EditExpenseSheet @bind-IsOpen="ShowEdit" ExpenseId="EditingExpenseId" OnSaved="LoadAsync" />
+
+@code {
+    private GastaApp.Services.MonthComparison Comparison = new(0, 0);
+    private List<GastaApp.Services.DailySpendPoint> DailySpend = new();
+    private List<GastaApp.Services.ExpenseListItem> RecentTransactions = new();
+
+    private decimal MaxDay => DailySpend.Count == 0 ? 0 : DailySpend.Max(d => d.Amount);
+
+
+    private bool ShowEdit;
+    private int EditingExpenseId;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        var now = DateTime.Now;
+        Comparison = await SummaryService.GetMonthOverMonthAsync(now.Year, now.Month);
+        DailySpend = await SummaryService.GetLast7DaysAsync();
+        RecentTransactions = await SummaryService.GetRecentTransactionsAsync(5);
+    }
+
+    private void OpenEdit(int expenseId)
+    {
+        EditingExpenseId = expenseId;
+        ShowEdit = true;
+    }
+
+    private async Task DeleteExpense(int expenseId)
+    {
+        // var confirmed = await Alert.ShowConfirmAsync("Delete this transaction?", "Confirm Delete");
+        // if (!confirmed) return;
+
+        await ExpenseRepository.DeleteAsync(expenseId);
+         await LoadAsync();
+    }
+
+    private void GoToAllTransactions() => Nav.NavigateTo("alltransactions");
+}

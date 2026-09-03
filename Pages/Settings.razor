@@ -1,0 +1,115 @@
+@page "/settings"
+@inject GastaApp.Services.ThemeService ThemeService
+@inject GastaApp.Data.IndexedDbService IndexedDbService
+@inject GastaApp.Services.SeedService SeedService
+@inject GastaApp.Services.AlertService Alert
+
+<PageTitle>Gasta - Settings</PageTitle>
+
+<div class="header">
+    <span class="screen-title">SETTINGS</span>
+</div>
+
+<div class="section">
+    <span class="section-label">Appearance</span>
+    <div class="segmented">
+        <button class="segment @(CurrentTheme == "Light" ? "active" : "")" @onclick='() => SetTheme("Light")'>
+            ☀️ Light
+        </button>
+        <button class="segment @(CurrentTheme == "Dark" ? "active" : "")" @onclick='() => SetTheme("Dark")'>
+            🌙 Dark
+        </button>
+    </div>
+</div>
+
+<div class="section">
+    <span class="section-label">Manage</span>
+    <div class="list-card">
+        <div class="list-row" @onclick='() => ShowComingSoon("Manage Payment Methods")'>
+            <span>Manage Payment Methods</span>
+            <span class="chevron">&#10095;</span>
+        </div>
+        <div class="list-row" @onclick='() => ShowComingSoon("Manage Categories")'>
+            <span>Manage Categories</span>
+            <span class="chevron">&#10095;</span>
+        </div>
+    </div>
+</div>
+
+<div class="section">
+    <span class="section-label">Notifications</span>
+    <div class="list-card">
+        <div class="list-row toggle-row">
+            <span>Budget Reminders</span>
+            <label class="switch">
+                <input type="checkbox" @bind="BudgetReminders" @bind:after="OnReminderToggled" />
+                <span class="slider"></span>
+            </label>
+        </div>
+    </div>
+    <div class="inline-note">Reminder preference is saved, but no notifications are sent yet.</div>
+</div>
+
+<div class="section">
+    <span class="section-label">Data</span>
+    <button class="danger-button" @onclick="DoReset">Reset All Data</button>
+    @if (ResetDone)
+    {
+        <div class="inline-note success-note">Data reset. Reloading...</div>
+    }
+</div>
+
+<div class="about-footer">
+    GASTA v1.0.0 (Blazor)
+</div>
+
+@code {
+    private const string RemindersKey = "gasta-budget-reminders";
+
+    private string CurrentTheme = "Light";
+    private bool BudgetReminders;
+    private bool ResetDone;
+
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        CurrentTheme = await ThemeService.GetCurrentAsync();
+        var saved = await JS.InvokeAsync<string?>("localStorage.getItem", RemindersKey);
+        BudgetReminders = saved == "true";
+    }
+
+    private async Task SetTheme(string option)
+    {
+        CurrentTheme = option;
+        await ThemeService.ApplyAsync(option);
+    }
+
+    private async Task OnReminderToggled()
+    {
+        await JS.InvokeVoidAsync("localStorage.setItem", RemindersKey, BudgetReminders ? "true" : "false");
+    }
+
+    private async Task ShowComingSoon(string feature)
+    {
+        await Alert.ShowAsync($"{feature} is coming soon.", "Coming Soon");
+    }
+
+    private async Task DoReset()
+    {
+        var confirmed = await Alert.ShowConfirmAsync(
+            "This will erase everything and reseed demo data. Are you sure?",
+            "Reset All Data",
+            confirmText: "Reset",
+            cancelText: "Cancel");
+
+        if (!confirmed) return;
+
+        await IndexedDbService.ClearAllAsync();
+        await SeedService.SeedIfEmptyAsync();
+        ResetDone = true;
+        StateHasChanged();
+        await Task.Delay(1200);
+        await JS.InvokeVoidAsync("location.reload");
+    }
+}

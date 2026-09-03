@@ -1,0 +1,43 @@
+@* Usage: <CategoryPicker @bind-IsOpen="ShowCategoryPicker" Categories="Categories"
+                          SelectedCategoryId="SelectedCategoryId" OnSelected="id => SelectedCategoryId = id" /> *@
+
+<div class="picker-scrim @(IsOpen ? "open" : "")" @onclick="Close"></div>
+<div class="picker-sheet @(IsOpen ? "open" : "")" @onclick:stopPropagation="true">
+    <div class="picker-title">Select Category</div>
+    <div class="picker-grid">
+        @foreach (var c in Categories)
+        {
+            <div class="picker-item" @onclick="() => Select(c.Id)">
+                <div class="picker-icon-wrap" style="background:@c.ColorKey;">
+                    <img src="images/categories/@(c.LogoImage).png" />
+                    @if (SelectedCategoryId == c.Id)
+                    {
+                        <span class="picker-check">✓</span>
+                    }
+                </div>
+                <span class="picker-name">@c.Name</span>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public List<GastaApp.Models.Category> Categories { get; set; } = new();
+    [Parameter] public int? SelectedCategoryId { get; set; }
+    [Parameter] public EventCallback<int> OnSelected { get; set; }
+
+    private async Task Select(int id)
+    {
+        // Single-tap select-and-close, same as MAUI's CategoryPickerView.
+        await OnSelected.InvokeAsync(id);
+        await Close();
+    }
+
+    private async Task Close()
+    {
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+    }
+}

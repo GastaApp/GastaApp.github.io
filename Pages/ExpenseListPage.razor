@@ -1,0 +1,83 @@
+@page "/expenselist"
+@using GastaApp.Components
+@inject GastaApp.Services.ExpenseSummaryService SummaryService
+@inject GastaApp.Data.Repositories.IPaymentMethodRepository PaymentMethodRepository
+@inject GastaApp.Data.Repositories.IExpenseRepository ExpenseRepository
+@inject GastaApp.Services.AlertService Alert
+@inject NavigationManager Nav
+
+<div class="header-bar" style="background:@(_paymentMethod?.ColorKey ?? "#5B7FE8");">
+    <button class="icon-btn" @onclick="GoBack">&#10094;</button>
+
+    @if (_paymentMethod is not null)
+    {
+        <img src="images/payments/@(_paymentMethod.LogoImage).svg" class="header-logo" />
+    }
+
+    <div class="header-actions">
+        <button class="icon-btn" @onclick="OnEditPaymentMethod">&#9998;</button>
+        @* <button class="icon-btn" @onclick="GoBack">&#10005;</button> *@
+    </div>
+</div>
+
+<div class="total-card">
+    <span class="total-label">TOTAL THIS MONTH</span>
+    <span class="total-amount">@Total.ToString("₱#,##0.00")</span>
+</div>
+
+<div class="transaction-list">
+    @if (Transactions.Count == 0)
+    {
+        <div class="empty-state">No transactions yet this month.</div>
+    }
+    @foreach (var item in Transactions)
+    {
+        <SwipeableTransactionRow Item="item" OnTap="OpenEdit" OnDelete="DeleteExpense" />
+    }
+</div>
+
+<EditExpenseSheet @bind-IsOpen="ShowEdit" ExpenseId="EditingExpenseId" OnSaved="LoadAsync" />
+
+@code {
+    [SupplyParameterFromQuery(Name = "paymentMethodId")]
+    [Parameter]
+    public int PaymentMethodId { get; set; }
+
+    private GastaApp.Models.PaymentMethod? _paymentMethod;
+    private List<GastaApp.Services.ExpenseListItem> Transactions = new();
+    private decimal Total;
+
+    private readonly DateTime Now = DateTime.Now;
+
+    private bool ShowEdit;
+    private int EditingExpenseId;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _paymentMethod = await PaymentMethodRepository.GetByIdAsync(PaymentMethodId);
+        Transactions = await SummaryService.GetTransactionsForPaymentMethodAsync(Now.Year, Now.Month, PaymentMethodId);
+        Total = Transactions.Sum(t => t.Amount);
+    }
+
+    private async Task DeleteExpense(int expenseId)
+    {
+        await ExpenseRepository.DeleteAsync(expenseId);
+        await LoadAsync();
+    }
+
+    private void OpenEdit(int expenseId)
+    {
+        EditingExpenseId = expenseId;
+        ShowEdit = true;
+    }
+
+    private async Task OnEditPaymentMethod()
+    {
+        // Manage Payment Methods isn't built yet — same "Coming soon" pattern as Settings.
+        await Alert.ShowAsync("Editing payment methods is coming soon.", "Coming Soon");
+    }
+
+    private void GoBack() => Nav.NavigateTo("");
+}
