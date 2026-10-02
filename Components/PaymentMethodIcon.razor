@@ -1,0 +1,79 @@
+﻿@* Usage (list row, own badge): <PaymentMethodIcon LogoImage="m.LogoImage" Name="m.Name" ColorKey="m.ColorKey" Size="40" />
+   Usage (bare, inside an already-colored chip): <PaymentMethodIcon ... ShowBackground="false" Size="24" />
+   Usage (prefer the square icon mark over the wordmark, where one exists):
+     <PaymentMethodIcon ... PreferIcon="true" Size="32" />
+   NOTE: wordmark logos are wide rectangles (GCash, MariBank, ShopeePay), not square
+   icons like categories — Size drives HEIGHT only for that case, width is auto with
+   a cap (object-fit:contain inside a forced square box would shrink a wide logo to
+   a sliver otherwise). Icon-mark logos (PreferIcon) ARE square, so they size the
+   same way CategoryIcon does — width AND height both driven by Size.
+   Wordmark assets are .png (not .svg) — LogoImage stores the filename without
+   extension, extension is applied here. *@
+@using GastaApp.Helpers
+
+@if (ShowBackground)
+{
+    <div class="pm-icon-circle" style="width:@(Size)px;height:@(Size)px;background:@(ColorKey ?? "var(--surface-alt)");@Style"
+         @attributes="AdditionalAttributes">
+        @if (UseIcon)
+        {
+            <img src="images/payments/@(IconFileName).png" style="width:@(Size * 0.6)px;height:@(Size * 0.6)px;object-fit:contain;" />
+        }
+        else if (HasLogo)
+        {
+            <img src="images/payments/@(LogoImage).png" style="height:@(Size * 0.5)px;width:auto;max-width:@(Size * 0.8)px;object-fit:contain;" />
+        }
+        else
+        {
+            <span style="color:white;font-weight:bold;font-size:@(Size * 0.4)px;line-height:1;">@InitialLetter</span>
+        }
+    </div>
+}
+else if (UseIcon)
+{
+    <img src="images/payments/@(IconFileName).png" style="width:@(Size)px;height:@(Size)px;object-fit:contain;@Style" @attributes="AdditionalAttributes" />
+}
+else if (HasLogo)
+{
+    <img src="images/payments/@(LogoImage).png" style="height:@(Size)px;width:auto;max-width:@(Size * 3.5)px;object-fit:contain;@Style" @attributes="AdditionalAttributes" />
+}
+else if (ShowLabelWithFallback)
+{
+    <div style="display:flex;align-items:center;gap:8px;@Style" @attributes="AdditionalAttributes">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:@(Size)px;height:@(Size)px;border-radius:50%;background:@(ColorHelper.Darken(ColorKey ?? "#888888", 0.28));color:white;font-weight:bold;font-size:@(Size * 0.5)px;line-height:1;flex-shrink:0;">@InitialLetter</span>
+        <strong style="color:@(LabelColor ?? "inherit");font-size:@LabelFallbackSize;">@Name</strong>
+    </div>
+}
+else
+{
+    <span style="display:inline-flex;align-items:center;justify-content:center;width:@(Size)px;height:@(Size)px;border-radius:50%;background:@(ColorHelper.Darken(ColorKey ?? "#888888", 0.28));color:white;font-weight:bold;font-size:@(Size * 0.5)px;line-height:1;flex-shrink:0;@Style"
+          @attributes="AdditionalAttributes">@InitialLetter</span>
+}
+
+@code {
+    [Parameter] public string? LogoImage { get; set; }
+    [Parameter] public string? Name { get; set; }
+    [Parameter] public string? ColorKey { get; set; }
+    [Parameter] public int Size { get; set; } = 40;
+    [Parameter] public string? Style { get; set; }
+
+    [Parameter] public bool ShowBackground { get; set; } = true;
+    [Parameter] public bool ShowLabelWithFallback { get; set; } = false;
+    [Parameter] public string? LabelColor { get; set; }
+    [Parameter] public string LabelFallbackSize { get; set; } = "0.75rem";
+
+    [Parameter] public bool PreferIcon { get; set; } = false;
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private bool HasLogo => !string.IsNullOrEmpty(LogoImage) && PaymentLogoSet.Logos.Contains(LogoImage);
+
+    private string? IconFileName =>
+            LogoImage is not null && PaymentLogoSet.IconLogos.TryGetValue(LogoImage, out var file) ? file : null;
+
+    private bool UseIcon => PreferIcon && IconFileName is not null;
+
+    private string InitialLetter =>
+        string.IsNullOrWhiteSpace(Name) ? "?" : Name.Trim()[0].ToString().ToUpperInvariant();
+}

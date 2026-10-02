@@ -22,7 +22,6 @@
     overflow-y: auto;
     background: var(--surface);
     border-radius: 20px 20px 0 0;
-    padding: 18px 18px 26px;
     transform: translateY(100%);
     transition: transform 0.28s ease;
     z-index: 26;
@@ -33,9 +32,25 @@
         box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
     }
 
+.picker-sheet-body {
+    padding: 18px 18px 26px;
+}
+
+.sheet-notch {
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+    margin: 10px auto 0;
+    /* Visual anchor only — these sheets close via scrim-tap or a Cancel/X button,
+       not drag-to-dismiss, so deliberately no cursor:grab or hover state here that
+       would imply otherwise. */
+}
+
 .picker-title {
     font-weight: bold;
-    font-size: 15px;
+    font-size: 1rem;
+    font-family: var(--font-display);
     margin-bottom: 16px;
 }
 
@@ -43,7 +58,7 @@
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 18px;
-}
+ }
 
 .picker-item {
     display: flex;
@@ -65,8 +80,8 @@
 }
 
     .picker-icon-wrap img {
-        width: 26px;
-        height: 26px;
+        max-width: 32px;
+        max-height: 26px;
     }
 
 .picker-check {
@@ -87,5 +102,35 @@
 
 .picker-name {
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 500;
+    font-family: var(--font-display);
+}
+
+/* Selected state — ring around the icon circle + accented name, same visual language
+   as CategoryEditSheet's color-swatch .selected state. */
+.picker-item.selected .picker-icon-wrap {
+    box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px var(--color-primary);
+}
+
+.picker-item.selected .picker-name {
+    color: var(--color-primary);
+    font-weight: 700;
+}
+
+/* Add-category tile — dashed border distinguishes it from real category tiles at a
+   glance, same "this is an action, not a choice" cue as a ghost/outline button. */
+.picker-icon-wrap-add {
+    background: var(--surface-alt);
+    border: 2px dashed var(--border);
+}
+
+.picker-add-plus {
+    font-size: 22px;
+    font-weight: 300;
+    color: var(--color-primary);
+    line-height: 1;
+}
+
+.picker-item-add .picker-name {
+    color: var(--color-primary);
 }

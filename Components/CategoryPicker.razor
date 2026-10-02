@@ -1,25 +1,38 @@
 @* Usage: <CategoryPicker @bind-IsOpen="ShowCategoryPicker" Categories="Categories"
-                          SelectedCategoryId="SelectedCategoryId" OnSelected="id => SelectedCategoryId = id" /> *@
+                          SelectedCategoryId="SelectedCategoryId" OnSelected="id => SelectedCategoryId = id"
+                          OnCategoryAdded="cat => Categories.Add(cat)" /> *@
+@inject GastaApp.Data.Repositories.ICategoryRepository CategoryRepository
 
 <div class="picker-scrim @(IsOpen ? "open" : "")" @onclick="Close"></div>
 <div class="picker-sheet @(IsOpen ? "open" : "")" @onclick:stopPropagation="true">
-    <div class="picker-title">Select Category</div>
-    <div class="picker-grid">
-        @foreach (var c in Categories)
-        {
-            <div class="picker-item" @onclick="() => Select(c.Id)">
-                <div class="picker-icon-wrap" style="background:@c.ColorKey;">
-                    <img src="images/categories/@(c.LogoImage).png" />
-                    @if (SelectedCategoryId == c.Id)
-                    {
-                        <span class="picker-check">✓</span>
-                    }
+    <div class="sheet-notch"></div>
+    <div class="picker-sheet-body">
+        <div class="picker-title">Select Category</div>
+        <div class="picker-grid">
+            @foreach (var c in _categories)
+            {
+                <div class="picker-item @(SelectedCategoryId == c.Id ? "selected" : "")" @onclick="() => Select(c.Id)">
+                    <div class="picker-icon-wrap" style="background:@ColorHelper.Lighten(c.ColorKey, 0.75);">
+                        <CategoryIcon IconKey="@c.IconKey" LogoImage="@c.LogoImage" Color="@c.ColorKey" Size="28" />
+                        @if (SelectedCategoryId == c.Id)
+                        {
+                            <span class="picker-check">✓</span>
+                        }
+                    </div>
+                    <span class="picker-name">@c.Name</span>
                 </div>
-                <span class="picker-name">@c.Name</span>
+            }
+            <div class="picker-item picker-item-add" @onclick="() => ShowAddSheet = true">
+                <div class="picker-icon-wrap picker-icon-wrap-add">
+                    <span class="picker-add-plus">+</span>
+                </div>
+                <span class="picker-name">Add Category</span>
             </div>
-        }
-    </div>
+        </div>
 </div>
+</div>
+
+<CategoryEditSheet @bind-IsOpen="ShowAddSheet" CategoryId="null" OnSaved="OnNewCategorySaved" />
 
 @code {
     [Parameter] public bool IsOpen { get; set; }
@@ -28,10 +41,45 @@
     [Parameter] public int? SelectedCategoryId { get; set; }
     [Parameter] public EventCallback<int> OnSelected { get; set; }
 
+    // Fired after a brand-new category is created from inside this picker, so the
+    // CALLER can add it to its own cached category data too — AddExpenseSheet and
+    // EditExpenseSheet each keep their own copy for lookups (SelectedCategory), and
+    // without this the newly picked category would render blank/placeholder until
+    // that sheet was closed and reopened.
+    [Parameter] public EventCallback<GastaApp.Models.Category> OnCategoryAdded { get; set; }
+
+    private List<GastaApp.Models.Category> _categories = new();
+    private bool _wasOpen;
+    private bool ShowAddSheet;
+
+    protected override void OnParametersSet()
+    {
+        if (IsOpen && !_wasOpen)
+        {
+            // Fresh working copy each time the picker opens, so edits made elsewhere
+            // (e.g. via Manage Categories in a previous session) are picked up.
+            _categories = new List<GastaApp.Models.Category>(Categories);
+        }
+        _wasOpen = IsOpen;
+    }
+
     private async Task Select(int id)
     {
-        // Single-tap select-and-close, same as MAUI's CategoryPickerView.
         await OnSelected.InvokeAsync(id);
+        await Close();
+    }
+
+    private async Task OnNewCategorySaved(int newCategoryId)
+    {
+        var created = await CategoryRepository.GetByIdAsync(newCategoryId);
+        if (created is null) return;
+
+        _categories.Add(created);
+        await OnCategoryAdded.InvokeAsync(created);
+
+        // Per the requested flow: auto-select the new category AND close the whole
+        // picker (not just the add sheet, landing back on the grid).
+        await OnSelected.InvokeAsync(newCategoryId);
         await Close();
     }
 

@@ -1,0 +1,75 @@
+﻿@* Usage: <AccentColorSheet IsOpen="..." IsOpenChanged="..." /> *@
+@inject GastaApp.Services.AccentColorService AccentColor
+
+<div class="sheet-scrim @(IsOpen ? "open" : "")" @onclick="Close"></div>
+<div class="sheet-panel @(IsOpen ? "open" : "")" @onclick:stopPropagation="true">
+    <div class="accent-banner">
+        <span class="accent-banner-title">Accent Color</span>
+        <button class="close-btn" @onclick="Close">&#10005;</button>
+    </div>
+
+    <div class="sheet-body">
+        <div class="accent-rect-grid">
+            @foreach (var preset in GastaApp.Services.AccentColorService.Presets)
+            {
+                <div class="accent-rect @(SelectedAccentId == preset.Id ? "selected" : "")"
+                     style="background:linear-gradient(135deg, @preset.LightPrimary, @preset.LightPrimaryDark);"
+                     @onclick="() => SelectAccent(preset.Id)">
+                    @if (SelectedAccentId == preset.Id)
+                    {
+                        <span class="accent-rect-check">&#10003;</span>
+                    }
+                    <span class="accent-rect-name">@preset.Name</span>
+                </div>
+            }
+        </div>
+
+        <div class="bg-toggle-row">
+            <div class="bg-toggle-text">
+                <span class="bg-toggle-title">Also change background</span>
+                <span class="bg-toggle-sub">Tint cards and surfaces to match your accent in Light mode</span>
+            </div>
+            <label class="switch">
+                <input type="checkbox" @bind="BackgroundTintEnabled" @bind:after="OnToggleChanged" />
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div class="bg-toggle-note">Dark mode always stays neutral, regardless of this setting.</div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+
+    private bool _wasOpen;
+    private string SelectedAccentId = "purple";
+    private bool BackgroundTintEnabled;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IsOpen && !_wasOpen)
+        {
+            // Re-read fresh each time it opens, so it reflects whatever's actually
+            // live rather than stale state from a previous open.
+            SelectedAccentId = await AccentColor.GetCurrentPresetIdAsync();
+            BackgroundTintEnabled = await AccentColor.GetBackgroundTintEnabledAsync();
+        }
+        _wasOpen = IsOpen;
+    }
+
+    private async Task SelectAccent(string presetId)
+    {
+        SelectedAccentId = presetId;
+        await AccentColor.SetAsync(presetId); // applies instantly, no Save step
+    }
+
+    private async Task OnToggleChanged() =>
+        await AccentColor.SetBackgroundTintEnabledAsync(BackgroundTintEnabled);
+
+    private async Task Close()
+    {
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+    }
+}

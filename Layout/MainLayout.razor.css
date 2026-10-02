@@ -18,14 +18,16 @@
     display: flex;
     justify-content: space-around;
     align-items: center;
-    padding: 16px 24px calc(16px + env(safe-area-inset-bottom, 0px));
- }
+    padding: 16px 18px calc(16px + env(safe-area-inset-bottom, 0px));
+}
 
-/* ::deep is required for every rule below. <NavLink> is a separate Razor
-   component, so the <a> it renders never receives MainLayout's own CSS
-   isolation scope attribute — a plain scoped selector like ".nav-item"
-   compiles to ".nav-item[b-xxxx]" and silently never matches that <a>.
-   ::deep tells the compiler not to require the scope attribute here. */
+/* ::deep is required for every NavLink-based rule below. <NavLink> is a separate
+   Razor component, so the <a> it renders never receives MainLayout's own CSS
+   isolation scope attribute — a plain scoped selector like ".nav-item" compiles to
+   ".nav-item[b-xxxx]" and silently never matches that <a>. ::deep tells the compiler
+   not to require the scope attribute here. .nav-item-add is a plain <button>
+   authored directly in this file, so it does NOT need ::deep — it's styled with a
+   normal scoped selector further down. */
 ::deep .nav-item {
     display: flex;
     align-items: center;
@@ -36,27 +38,32 @@
     color: var(--text-secondary);
     text-decoration: none;
     opacity: 0.6;
-    transition: background 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+    transition: color 0.2s ease, opacity 0.2s ease;
 }
 
     ::deep .nav-item svg {
         transition: transform 0.2s ease;
     }
 
-    /* Blazor's NavLink applies "active" automatically. Icon color comes for
-   free since the SVGs use stroke="currentColor" — no separate icon-color
-   logic needed. Excludes the center button, which has its own treatment. */
-    ::deep .nav-item.active:not(.nav-item-main) {
+    /* No background pill anymore — was white icon on a pale pastel tint in light
+       mode, a real contrast failure (icon nearly invisible), not just a style
+       choice. Standard modern tab-bar pattern instead: selected = accent-colored
+       icon only. Works identically across all 7 presets x both themes with zero
+       contrast risk, since it's always --color-primary against --nav-bg, the same
+       pairing already used and verified for buttons elsewhere in the app. */
+    ::deep .nav-item.active {
         opacity: 1;
-        color: white;
+        color: var(--color-primary);
         background: var(--nav-active-bg);
     }
 
-        ::deep .nav-item.active:not(.nav-item-main) svg {
+        ::deep .nav-item.active svg {
             transform: translateY(-1px);
         }
 
-::deep .nav-item-main {
+/* Center Add button — not a route, so it has no "active" state; always shows the
+   accent treatment since it's the app's one constant primary action. */
+.nav-item-add {
     background: linear-gradient(150deg, var(--color-primary), var(--color-primary-dark));
     color: white !important;
     width: 50px;
@@ -64,16 +71,14 @@
     border-radius: 50%;
     border: 2px solid rgba(255, 255, 255, 0.35);
     opacity: 1;
-    box-shadow: 0 6px 14px rgba(91, 79, 232, 0.4);
+    /* color-mix ties the shadow tint to whatever accent is currently active,
+       instead of a hardcoded purple rgba — was always purple regardless of the
+       chosen preset before. */
+    box-shadow: 0 6px 14px color-mix(in srgb, var(--color-primary) 40%, transparent);
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
 }
-
-    ::deep .nav-item-main .peso-glyph {
-        font-family: var(--font-display);
-        font-weight: 700;
-        font-size: 21px;
-        line-height: 1;
-    }
-
-    ::deep .nav-item-main.active {
-        box-shadow: 0 6px 18px rgba(91, 79, 232, 0.55);
-    }

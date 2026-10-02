@@ -1,0 +1,155 @@
+@* Usage: <CategoryEditSheet @bind-IsOpen="ShowEdit" CategoryId="id" OnSaved="LoadAsync" /> — pass CategoryId="null" for Add *@
+@using GastaApp.Helpers
+@inject GastaApp.Data.Repositories.ICategoryRepository CategoryRepository
+@inject GastaApp.Services.AlertService Alert
+
+<div class="sheet-scrim @(IsOpen ? "open" : "")" @onclick="Cancel"></div>
+<div class="sheet-panel @(IsOpen ? "open" : "")" @onclick:stopPropagation="true">
+    <div class="sheet-header">
+        <span class="sheet-title">@(CategoryId is null ? "Add Category" : "Edit Category")</span>
+        <button class="close-btn" @onclick="Cancel">&#10005;</button>
+    </div>
+
+    <div class="sheet-body">
+        <label class="field-label">Name</label>
+        <input class="field-input" @bind="Name" @bind:event="oninput" placeholder="e.g. Subscriptions" />
+
+        <label class="field-label">Color</label>
+        <div class="color-grid">
+            @foreach (var color in CategoryColorSwatches.Colors)
+            {
+                <div class="color-swatch @(SelectedColorKey == color ? "selected" : "")"
+                     style="background:@color;"
+                     @onclick="() => SelectedColorKey = color">
+                    @if (SelectedColorKey == color)
+                    {
+                        <span class="check">&#10003;</span>
+                    }
+                </div>
+            }
+        </div>
+
+        <label class="field-label">Icon</label>
+        @if (CategoryId is not null && SelectedIconKey is null)
+        {
+            <p class="icon-hint">Using the original logo — tap an icon below to replace it.</p>
+        }
+        <div class="icon-grid">
+            @foreach (var key in CategoryIconSet.Icons.Keys)
+            {
+                <div class="icon-swatch @(SelectedIconKey == key ? "selected" : "")"
+                     style="background:@(SelectedColorKey ?? "var(--surface-alt)");"
+                     @onclick="() => SelectedIconKey = key">
+                    <CategoryIcon IconKey="@key" Size="20" />
+                </div>
+            }
+        </div>
+
+        @if (CategoryId is not null)
+        {
+            <button class="delete-link" @onclick="Delete">Delete Category</button>
+        }
+
+        <div class="action-row">
+            <button class="cancel-button" @onclick="Cancel">Cancel</button>
+            <button class="save-button" disabled="@(!CanSave)" @onclick="Save">Save</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public int? CategoryId { get; set; }
+    [Parameter] public EventCallback<int> OnSaved { get; set; }
+
+    private bool _wasOpen;
+    private string Name = "";
+    private string? SelectedColorKey;
+    private string? SelectedIconKey;
+    private int _sortOrder;
+
+    // Icon is only REQUIRED for brand-new categories, which have no LogoImage to fall
+    // back on. Existing categories can save with SelectedIconKey still null — that's
+    // exactly what preserves a LogoImage-only category's real logo untouched.
+    private bool CanSave => !string.IsNullOrWhiteSpace(Name) && SelectedColorKey is not null &&
+        (CategoryId is not null || SelectedIconKey is not null);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IsOpen && !_wasOpen)
+        {
+            if (CategoryId is int id)
+            {
+                var existing = await CategoryRepository.GetByIdAsync(id);
+                if (existing is not null)
+                {
+                    Name = existing.Name;
+                    SelectedColorKey = existing.ColorKey;
+                    // Only pre-select if this category was already vector-icon-based.
+                    // A LogoImage-only category (the original branded seed categories)
+                    // loads with NOTHING selected here on purpose — editing the name or
+                    // color shouldn't silently convert it away from its real logo. It
+                    // only switches over if the user explicitly taps an icon below.
+                    SelectedIconKey = existing.IconKey;
+                    _sortOrder = existing.SortOrder;
+                }
+            }
+            else
+            {
+                // Fresh entry for Add.
+                Name = "";
+                SelectedColorKey = CategoryColorSwatches.Colors.First();
+                SelectedIconKey = CategoryIconSet.Icons.Keys.First();
+                var all = await CategoryRepository.GetActiveOrderedAsync();
+                _sortOrder = all.Count; // append at the end
+            }
+        }
+        _wasOpen = IsOpen;
+    }
+
+    private async Task Save()
+    {
+        if (!CanSave) return;
+
+        GastaApp.Models.Category category;
+        if (CategoryId is int id)
+        {
+            category = await CategoryRepository.GetByIdAsync(id) ?? new GastaApp.Models.Category { Id = id };
+        }
+        else
+        {
+            category = new GastaApp.Models.Category { SortOrder = _sortOrder };
+        }
+
+        category.Name = Name.Trim();
+        category.ColorKey = SelectedColorKey!;
+        category.IconKey = SelectedIconKey;
+
+        var savedId = await CategoryRepository.SaveAsync(category);
+        await OnSaved.InvokeAsync(savedId);
+        await Close();
+    }
+
+    private async Task Delete()
+    {
+        if (CategoryId is not int id) return;
+
+        var confirmed = await Alert.ShowConfirmAsync(
+            $"Delete \"{Name}\"? Existing expenses in this category will show as Uncategorized.",
+            "Delete Category");
+        if (!confirmed) return;
+
+        await CategoryRepository.DeleteAsync(id);
+        await OnSaved.InvokeAsync();
+        await Close();
+    }
+
+    private async Task Cancel() => await Close();
+
+    private async Task Close()
+    {
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+    }
+}

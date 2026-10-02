@@ -2,10 +2,15 @@
 
 export function openDb() {
     return new Promise((resolve, reject) => {
-        const request = indexedDB.open('gasta-db', 1);
+        // Version bumped 1 -> 2 to add the categoryBudgets store. onupgradeneeded only
+        // fires when the requested version is HIGHER than what's already stored, so
+        // this bump is what makes the new store actually get created for existing
+        // users who already have a version-1 database — without it, this store would
+        // silently never exist for anyone who installed the app before this change.
+        const request = indexedDB.open('gasta-db', 2);
         request.onupgradeneeded = (event) => {
             db = event.target.result;
-            ['expenses', 'categories', 'paymentMethods', 'budgets'].forEach(store => {
+            ['expenses', 'categories', 'paymentMethods', 'budgets', 'categoryBudgets'].forEach(store => {
                 if (!db.objectStoreNames.contains(store)) {
                     db.createObjectStore(store, { keyPath: 'id', autoIncrement: true });
                 }
@@ -50,7 +55,7 @@ export function remove(storeName, id) {
 }
 
 export function clearAll() {
-    return Promise.all(['expenses', 'categories', 'paymentMethods', 'budgets'].map(storeName =>
+    return Promise.all(['expenses', 'categories', 'paymentMethods', 'budgets', 'categoryBudgets'].map(storeName =>
         new Promise((resolve, reject) => {
             const request = db.transaction(storeName, 'readwrite').objectStore(storeName).clear();
             request.onsuccess = () => resolve();

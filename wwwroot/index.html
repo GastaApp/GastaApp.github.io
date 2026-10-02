@@ -5,27 +5,29 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GastaApp</title>
-    <base href="/" />
+    <base href="/GastaApp/" />
+    <script>
+        (function () {
+            try {
+                var saved = localStorage.getItem('gasta-theme'); // matches ThemeService.StorageKey
+                var theme = saved === 'Dark' ? 'dark' : 'light';  // matches ThemeService's casing
+                document.documentElement.setAttribute('data-theme', theme);
+            } catch (e) { /* ignore */ }
+        })();
+    </script>
     <link rel="preload" id="webassembly" />
     <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="css/theme.css" />
-    <link rel="stylesheet" href="css/app.css" />
+    <link rel="stylesheet" href="css/theme.css?v=3" />
+    <link rel="stylesheet" href="css/app.css?v=3" />
     <link rel="icon" type="image/png" href="gasta.png" />
     <link href="GastaApp.styles.css" rel="stylesheet" />
     <link href="manifest.webmanifest" rel="manifest" />
-    <link rel="apple-touch-icon" sizes="512x512" href="gasta.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="gastalogo.png" />
     <link rel="apple-touch-icon" sizes="192x192" href="gasta.png" />
     <script type="importmap"></script>
 </head>
 
 <body>
-    <!--<div id="app">
-        <svg class="loading-progress">
-            <circle r="40%" cx="50%" cy="50%" />
-            <circle r="40%" cx="50%" cy="50%" />
-        </svg>
-        <div class="loading-progress-text"></div>
-    </div>-->
     <div id="app">
         <div class="loading-screen">
             <div class="loading-ring-wrap">
@@ -34,9 +36,9 @@
                     <circle class="loading-ring-bar" cx="60" cy="60" r="54" />
                 </svg>
                 <div class="loading-video-wrap">
-                    <video class="loading-video" autoplay loop muted playsinline>
-                        <source src="videos/gasta-loading-transparent.webm" type="video/webm" />
-                    </video>
+                    <div class="loading-video-crop">
+                        <img class="loading-video" src="images/gasta-icon-square.gif" alt="Gasta" />
+                    </div>
                 </div>
             </div>
             <div class="loading-percentage"></div>
@@ -49,20 +51,26 @@
         <a href="." class="reload">Reload</a>
         <span class="dismiss">🗙</span>
     </div>
+
     <script src="js/theme.js"></script>
     <script src="js/pointer.js"></script>
+    <script src="js/export.js"></script>
+    <script src="js/settingsHeader.js"></script>
+    <script src="js/accentColor.js"></script>
     <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
 
     <script>
-        navigator.serviceWorker.register('service-worker.js', { updateViaCache: 'none' });
+        navigator.serviceWorker.register('service-worker.js', { updateViaCache: 'none' })
+            .then(reg => {
+                // Proactively ask the browser to re-check for an update right away,
+                // rather than waiting for its own internal timing. Still only works
+                // if the fetched service-worker.js is actually byte-different from
+                // what's installed — this doesn't replace the build-stamping fix,
+                // it just makes sure a real update is noticed as soon as possible
+                // once that fix is in place.
+                reg.update();
+            });
 
-        // Without this, even after the new worker takes over (skipWaiting +
-        // clients.claim in service-worker.published.js), an already-open tab keeps
-        // running on the old cached JS/WASM/CSS already loaded into memory — this
-        // reloads once, automatically, when control actually changes hands, so the
-        // tab picks up the new version instead of sitting in a stale/mixed state.
-        // hasReloaded guards against a reload loop, since controllerchange can in
-        // some browsers fire more than once for a single update.
         let hasReloaded = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
             if (hasReloaded) return;

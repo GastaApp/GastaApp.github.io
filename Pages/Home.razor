@@ -1,55 +1,78 @@
 @page "/"
-@using GastaApp.Components
 @using GastaApp.Helpers
+@using GastaApp.Components
+@implements IDisposable
+@inject GastaApp.Services.AddExpenseUiService AddExpenseUi
 @inject Services.ExpenseSummaryService SummaryService
 @inject Services.ThemeService ThemeService
+@inject GastaApp.Services.UserProfileService UserProfile
 @inject NavigationManager Nav
 
-<div class="header">
-    <div class="avatar">H</div>
-    <div class="month-switcher">
-        <span @onclick="PreviousMonth">&#10094;</span>
-        <strong>@SelectedMonth.ToString("MMMM").ToUpper()</strong>
-        <span style="text-align:end;" @onclick="NextMonth">&#10095;</span>
+<div class="home-fixed">
+    <div class="header">
+        <div class="avatar">@AvatarInitial</div>
+        <div class="month-switcher">
+            <span @onclick="PreviousMonth">&#10094;</span>
+            <strong>@SelectedMonth.ToString("MMMM")</strong>
+            <span style="text-align:end;" @onclick="NextMonth">&#10095;</span>
+        </div>
     </div>
-</div>
 
-<div class="card" style="margin-top:18px;">
-    <div class="screen-title">TOTAL EXPENSES</div>
-    <div class="amount-display">@Total.ToString("₱#,##0.00")</div>
-    <div class="progress-track">
-        <div class="progress-fill" style="width:@(PercentSpent * 100)%;"></div>
-    </div>
-    <div class="budget-row">
-        <div><span class="caption">Budget</span><strong>@Budget.ToString("₱#,##0.00")</strong></div>
-        <div><span class="caption">Spent</span><strong>@Total.ToString("₱#,##0.00")</strong></div>
-        <div><span class="caption">Remaining</span><strong class="@(Remaining < 0 ? "danger-text" : "success")">@Remaining.ToString("₱#,##0.00")</strong></div>
-    </div>
-    <button class="ghost-button" style="width:100%;margin-top:10px;" @onclick="() => ShowEditBudget = true">Edit Budget</button>
-</div>
+    <div class="overview-card">
+        <div class="overview-top">
+            <div class="overview-text">
+                <span class="eyebrow">MONTHLY OVERVIEW</span>
+                <span class="overview-label">TOTAL EXPENSES</span>
+                <div class="amount-display">@Total.ToString("₱#,##0.00")</div>
+                <div class="progress-track">
+                    <div class="progress-fill" style="width:@((PercentSpent * 100).ToString(System.Globalization.CultureInfo.InvariantCulture))%;"></div>
+                </div>
+                <div class="progress-captions">
+                    <span>@((PercentSpent * 100).ToString("0"))% of budget</span>
+                    <span>@((PercentSpent * 100).ToString("0"))% used</span>
+                </div>
+            </div>
+            @if (ThemeService.IsDark)
+            {
+                <img src="images/illustrations/monthly-overview-dark.png" class="overview-illustration-dark" alt="" />
+            }
+            else
+            {
+                <img src="images/illustrations/monthly-overview.png" class="overview-illustration" alt="" />
+            }
+        </div>
 
-<div class="tabs" style="margin-top:18px;">
-    <span class="@(!IsPaymentsTab ? "tab active" : "tab")" @onclick="() => IsPaymentsTab = false">CATEGORIES</span>
-    <span class="@(IsPaymentsTab ? "tab active" : "tab")" @onclick="() => IsPaymentsTab = true">PAYMENTS</span>
-    @if (IsPaymentsTab)
-    {
-        <div class="view-toggle" @onclick="() => PaymentsGridView = !PaymentsGridView">
+        <div class="overview-divider"></div>
+
+        <div class="budget-row">
+            <div><span class="caption">Monthly Budget</span><strong>@Budget.ToString("₱#,##0.00")</strong></div>
+            <div><span class="caption">Spent</span><strong>@Total.ToString("₱#,##0.00")</strong></div>
+            <div><span class="caption">Remaining</span><strong class="@(Remaining < 0 ? "danger-text" : "success")">@Remaining.ToString("₱#,##0.00")</strong></div>
+        </div>
+
+        <button class="ghost-button" style="width:100%;margin-top:10px;" @onclick="@(() => Nav.NavigateTo("managebudget"))">Edit Monthly Budget</button>
+    </div>
+
+    <div class="tabs">
+        <span class="@(!IsPaymentsTab ? "tab active" : "tab")" @onclick="() => IsPaymentsTab = false">CATEGORIES</span>
+        <span class="@(IsPaymentsTab ? "tab active" : "tab")" @onclick="() => IsPaymentsTab = true">PAYMENTS</span>
+        <div class="view-toggle" @onclick="ToggleCurrentView">
             <span class="view-icon">
-                @if (PaymentsGridView)
-                {
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-list" viewBox="0 0 16 16">
-                        <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5" />
-                    </svg>
-                }
-                else
+                @if (CurrentGridView)
                 {
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-grid" viewBox="0 0 16 16">
                         <path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5zM2.5 2a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5zm6.5.5A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5zM1 10.5A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5zm6.5.5A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5z" />
                     </svg>
                 }
+                else
+                {
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-list" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5" />
+                    </svg>
+                }
             </span>
         </div>
-    }
+    </div>
 </div>
 
 @if (IsPaymentsTab)
@@ -60,7 +83,8 @@
             @foreach (var payment in Payments)
             {
                 <div class="chip" style="background:@PaymentChipBackground(payment);" @onclick="() => GoToExpenseList(payment.Id)">
-                    <img src="images/payments/@(payment.LogoImage).svg" />
+                    <PaymentMethodIcon LogoImage="@payment.LogoImage" Name="@payment.Name" ColorKey="@payment.ColorKey"
+                                       ShowBackground="false" ShowLabelWithFallback="true" LabelColor="@(AmountTextColor(payment))" Size="24" />
                     <strong style="color:@(AmountTextColor(payment));">@payment.Spent.ToString("₱#,##0.00")</strong>
                 </div>
             }
@@ -73,7 +97,8 @@
             {
                 <div class="payment-row" style="background:@PaymentChipBackground(payment);" @onclick="() => GoToExpenseList(payment.Id)">
                     <div class="payment-row-logo">
-                        <img src="images/payments/@(payment.LogoImage).svg" />
+                        <PaymentMethodIcon LogoImage="@payment.LogoImage" Name="@payment.Name" ColorKey="@payment.ColorKey"
+                                           ShowBackground="false" ShowLabelWithFallback="true" LabelColor="@(AmountTextColor(payment))" Size="24" />
                     </div>
                     <strong class="payment-row-amount" style="color:@(AmountTextColor(payment))">@payment.Spent.ToString("₱#,##0.00")</strong>
                 </div>
@@ -83,47 +108,93 @@
 }
 else
 {
-    <div class="category-grid">
-        @foreach (var category in Categories)
-        {
-            var circumference = 2 * Math.PI * 28;
-            var offset = circumference * (1 - category.PercentSpent / 100);
-            <div class="category-item" @onclick="() => OpenAddExpense(category)">
-                <div class="ring-wrap">
-                    <svg viewBox="0 0 64 64" class="ring">
-                        <circle class="ring-track" cx="32" cy="32" r="28" style="stroke:@ColorHelper.AdaptiveTrack(category.ColorKey, ThemeService.IsDark);" />
-                        <circle class="ring-fill" cx="32" cy="32" r="28"
-                                style="stroke:@category.ColorKey; stroke-dasharray:@circumference; stroke-dashoffset:@offset;" />
-                    </svg>
-                    <img src="images/categories/@(category.LogoImage).png" class="ring-logo" />
+    @if (CategoriesGridView)
+    {
+        <div class="category-grid">
+            @foreach (var category in Categories)
+            {
+                var circumference = 2 * Math.PI * 24;
+                var offset = circumference * (1 - category.PercentSpent / 100);
+                var isOver = category.Spent > category.Budget;
+                <div class="category-item" @onclick="() => OpenAddExpense(category)">
+                    <div class="ring-wrap">
+                        <svg viewBox="0 0 64 64" class="ring">
+                            <circle class="ring-track" cx="32" cy="32" r="24" style="stroke:@(ColorHelper.AdaptiveTrackToward(category.ColorKey, ThemeService.IsDark, ColorHelper.DarkPageBackground, darkAmount: 0.6));" />
+                            <circle class="ring-fill" cx="32" cy="32" r="24"
+                                    style="stroke:@(ColorHelper.AdaptiveTrack(category.ColorKey, ThemeService.IsDark, lightAmount: 0, darkAmount: -0.2)); stroke-dasharray:@circumference; stroke-dashoffset:@offset;" />
+                        </svg>
+                        <CategoryIcon IconKey="@category.IconKey" LogoImage="@category.LogoImage" Color="@category.ColorKey" Size="28" class="ring-logo" />
+                    </div>
+                    <span style="color:@(category.ColorKey);font-size:0.688rem;font-weight: 600;font-family: var(--font-display);">@category.Name</span>
+                    <span class="caption @(isOver ? "over-budget" : "")">@category.Spent.ToString("₱#,##0") / @category.Budget.ToString("₱#,##0")</span>
                 </div>
-                <span style="color:@(category.ColorKey);font-size:0.688rem;font-weight: 600;font-family: var(--font-display);">@category.Name</span>
-                <span class="caption">@category.Spent.ToString("₱#,##0") / @category.Budget.ToString("₱#,##0")</span>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="category-list-wrap">
+            <div class="category-list">
+                @foreach (var category in Categories)
+                {
+                    var rawPct = category.Budget <= 0 ? 0 : (double)(category.Spent / category.Budget * 100m);
+                    var displayPct = (int)Math.Round(rawPct);
+                    var barWidthPct = Math.Min(rawPct, 100);
+                    var isOver = category.Spent > category.Budget;
+                    var indicatorColor = isOver ? "var(--danger)" : category.ColorKey;
+
+                    <div class="category-list-row" @onclick="() => OpenAddExpense(category)">
+                        <div class="cat-list-icon" style="background:@ColorHelper.Lighten(category.ColorKey, 0.75);">
+                            <CategoryIcon IconKey="@category.IconKey" LogoImage="@category.LogoImage" Color="@category.ColorKey" Size="20" />
+                        </div>
+                        <div class="cat-list-info">
+                            <div class="cat-list-top">
+                                <span class="cat-list-name">@category.Name</span>
+                            </div>
+                            <div class="cat-list-track">
+                                <div class="cat-list-fill" style="width:@(barWidthPct.ToString(System.Globalization.CultureInfo.InvariantCulture))%; background:@indicatorColor;"></div>
+                            </div>
+                            <span class="cat-list-amounts @(isOver ? "over-budget" : "")">@category.Spent.ToString("₱#,##0.00") / @category.Budget.ToString("₱#,##0.00")</span>
+                        </div>
+                        <div class="cat-list-infopct">
+                            <span class="cat-list-pct" style="color:@indicatorColor;">@displayPct%</span>
+                            <span class="chevron">&#10095;</span>
+                        </div>
+                    </div>
+                }
             </div>
-        }
-    </div>
+        </div>
+    }
 }
 
-<AddExpenseSheet @bind-IsOpen="ShowAddExpense" Category="SelectedCategory" OnSaved="LoadAsync" />
-
-<EditBudgetDialog @bind-IsOpen="ShowEditBudget" Year="SelectedMonth.Year" Month="SelectedMonth.Month"
-                   CurrentBudget="Budget" OnSaved="LoadAsync" />
-
 @code {
+    private string AvatarInitial = "H"; // shown briefly before the async load resolves
     private DateTime SelectedMonth = DateTime.Now;
     private decimal Budget, Total, Remaining;
     private double PercentSpent;
     private bool IsPaymentsTab = false;
     private bool PaymentsGridView = true;
+    private bool CategoriesGridView = true;
     private List<Services.SpendSummary> Payments = new();
     private List<Services.SpendSummary> Categories = new();
 
-    private bool ShowAddExpense;
-    private Services.SpendSummary? SelectedCategory;
+    private bool CurrentGridView => IsPaymentsTab ? PaymentsGridView : CategoriesGridView;
 
-    private bool ShowEditBudget;
+    private void ToggleCurrentView()
+    {
+        if (IsPaymentsTab) PaymentsGridView = !PaymentsGridView;
+        else CategoriesGridView = !CategoriesGridView;
+    }
 
-    protected override async Task OnInitializedAsync() => await LoadAsync();
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+        var nickname = await UserProfile.GetNicknameAsync();
+        AvatarInitial = nickname[0].ToString().ToUpperInvariant();
+        AddExpenseUi.OnExpenseSaved += HandleExpenseSaved;
+    }
+
+    private async void HandleExpenseSaved() => await InvokeAsync(LoadAsync);
 
     private async Task LoadAsync()
     {
@@ -135,16 +206,16 @@ else
 
         Payments = await SummaryService.GetPaymentMethodSummariesAsync(SelectedMonth.Year, SelectedMonth.Month);
         Categories = await SummaryService.GetCategorySummariesAsync(SelectedMonth.Year, SelectedMonth.Month);
+        StateHasChanged();
     }
 
     private async Task PreviousMonth() { SelectedMonth = SelectedMonth.AddMonths(-1); await LoadAsync(); }
     private async Task NextMonth() { SelectedMonth = SelectedMonth.AddMonths(1); await LoadAsync(); }
 
-    private void OpenAddExpense(Services.SpendSummary category)
-    {
-        SelectedCategory = category;
-        ShowAddExpense = true;
-    }
+    private void OpenAddExpense(Services.SpendSummary category) => AddExpenseUi.Open(category);
+
+    public void Dispose() => AddExpenseUi.OnExpenseSaved -= HandleExpenseSaved;
+
 
     private void GoToExpenseList(int paymentMethodId) =>
         Nav.NavigateTo($"expenselist?paymentMethodId={paymentMethodId}");
@@ -153,9 +224,14 @@ else
     // theme-driven, so amount text needs a fixed color that reads on each one. Every
     // payment method's ColorKey is a light pastel except Maya (#1F1B18, near-black),
     // so black works everywhere except that one case.
-    private static string AmountTextColor(Services.SpendSummary payment) =>
-        payment.Name == "Maya" ? "white" : "black";
+    private string AmountTextColor(Services.SpendSummary payment) =>
+    ColorHelper.ReadableTextColor(PaymentChipBackground(payment));
 
+    // Every payment ColorKey is a near-white pastel (except Maya). Shown at full
+    // brightness on a dark page they read as glaring bright rectangles rather than
+    // feeling part of the theme. Darkening moderately in dark mode keeps each color's
+    // hue identity while toning it down — same technique as ColorHelper.AdaptiveTrack
+    // for the category rings.
     private string PaymentChipBackground(Services.SpendSummary payment) =>
-    ThemeService.IsDark ? ColorHelper.Darken(payment.ColorKey, 0.22) : payment.ColorKey;
+        ThemeService.IsDark ? ColorHelper.Darken(payment.ColorKey, 0.10) : payment.ColorKey;
 }

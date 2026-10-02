@@ -27,27 +27,6 @@
     <Content Update="App.razor">
       <CopyToOutputDirectory></CopyToOutputDirectory>
     </Content>
-    <Content Update="Components\AddExpenseSheet.razor">
-      <CopyToOutputDirectory></CopyToOutputDirectory>
-    </Content>
-    <Content Update="Components\AlertView.razor">
-      <CopyToOutputDirectory></CopyToOutputDirectory>
-    </Content>
-    <Content Update="Components\CategoryPicker.razor">
-      <CopyToOutputDirectory></CopyToOutputDirectory>
-    </Content>
-    <Content Update="Components\EditBudgetDialog.razor">
-      <CopyToOutputDirectory></CopyToOutputDirectory>
-    </Content>
-    <Content Update="Components\EditExpenseSheet.razor">
-      <CopyToOutputDirectory></CopyToOutputDirectory>
-    </Content>
-    <Content Update="Components\NumericKeypad.razor">
-      <CopyToOutputDirectory></CopyToOutputDirectory>
-    </Content>
-    <Content Update="Components\SwipeableTransactionRow.razor">
-      <CopyToOutputDirectory></CopyToOutputDirectory>
-    </Content>
     <Content Update="Pages\AllTransactionsPage.razor">
       <CopyToOutputDirectory></CopyToOutputDirectory>
     </Content>
@@ -109,30 +88,6 @@
       <CopyToOutputDirectory></CopyToOutputDirectory>
     </Content>
     <Content Update="wwwroot\images\categories\transpo.png">
-      <CopyToOutputDirectory></CopyToOutputDirectory>
-    </Content>
-    <Content Update="wwwroot\images\payments\cash.svg">
-      <CopyToOutputDirectory></CopyToOutputDirectory>
-    </Content>
-    <Content Update="wwwroot\images\payments\creditcard.svg">
-      <CopyToOutputDirectory></CopyToOutputDirectory>
-    </Content>
-    <Content Update="wwwroot\images\payments\debitcard.svg">
-      <CopyToOutputDirectory></CopyToOutputDirectory>
-    </Content>
-    <Content Update="wwwroot\images\payments\gcash.svg">
-      <CopyToOutputDirectory></CopyToOutputDirectory>
-    </Content>
-    <Content Update="wwwroot\images\payments\gotyme.svg">
-      <CopyToOutputDirectory></CopyToOutputDirectory>
-    </Content>
-    <Content Update="wwwroot\images\payments\maribank.svg">
-      <CopyToOutputDirectory></CopyToOutputDirectory>
-    </Content>
-    <Content Update="wwwroot\images\payments\maya.svg">
-      <CopyToOutputDirectory></CopyToOutputDirectory>
-    </Content>
-    <Content Update="wwwroot\images\payments\shopeepay.svg">
       <CopyToOutputDirectory></CopyToOutputDirectory>
     </Content>
     <Content Update="wwwroot\images\pepecry.png">

@@ -1,0 +1,164 @@
+@page "/managebudget"
+@inject GastaApp.Services.ExpenseSummaryService SummaryService
+@inject NavigationManager Nav
+
+<div class="budget-page">
+    <div class="budget-fixed-top">
+        <div class="header-bar">
+            <button class="icon-btn" @onclick="Cancel">&#10094;</button>
+        </div>
+
+        <div class="header-content">
+            <div class="header-content-left">
+                <span class="header-title">Monthly Budget</span> 
+                <span class="intro-text">
+                    Syempre dapat may budget ka hindi yung
+                    si gastos ka lang ng gastos diba?
+                </span>
+            </div>
+            <img src="images/pepecry.gif" />
+        </div>
+
+        <button class="past-months-button" @onclick="() => ShowCopySheet = true">
+            Set from past months
+        </button>
+
+        <label class="field-label">Monthly Budget</label>
+        <div class="field-input tappable" @onclick="() => OpenKeypad(null)">
+            <span>@MonthlyBudget.ToString("₱#,##0.00")</span>
+            <span class="chevron">&#10095;</span>
+        </div>
+    </div>
+
+    <div class="budget-scroll">
+        <div class="section">
+            <span class="section-title">Category Budgets</span>
+            <p class="intro-text">Set spending limits for specific categories.</p>
+
+            <div class="allocated-row">
+                <span class="allocated-label">Allocated</span>
+                <span class="allocated-amount @(AllocatedTotal > MonthlyBudget ? "over" : "")">
+                    @AllocatedTotal.ToString("₱#,##0") / @MonthlyBudget.ToString("₱#,##0")
+                </span>
+            </div>
+
+            <div class="category-list-wrap">
+                <div class="category-list">
+                    @foreach (var row in CategoryRows)
+                    {
+                        var amount = GetAmount(row.CategoryId);
+                        var pct = (amount <= 0 || MonthlyBudget <= 0) ? 0 : (double)(amount / MonthlyBudget * 100m);
+                        <div class="category-row" @onclick="() => OpenKeypad(row.CategoryId)">
+                            <div class="cat-icon" style="background:@ColorHelper.Lighten(row.ColorKey, 0.75);">
+                                <CategoryIcon IconKey="@row.IconKey" LogoImage="@row.LogoImage" Color="@row.ColorKey" Size="20" />
+                            </div>
+                            <div class="cat-info">
+                                <div class="cat-top">
+                                    <span class="cat-name">@row.Name</span>
+                                    <span class="cat-amount">@amount.ToString("₱#,##0")</span>
+                                    <span class="chevron">&#10095;</span>
+                                </div>
+                                <div class="cat-track">
+                                    <div class="cat-fill" style="width:@(Math.Min(pct, 100).ToString(System.Globalization.CultureInfo.InvariantCulture))%; background:@row.ColorKey;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="budget-fixed-bottom">
+        <div class="action-row">
+            <button class="cancel-button" @onclick="Cancel">Cancel</button>
+            <button class="save-button" @onclick="Save">Save</button>
+        </div>
+    </div>
+</div>
+
+<NumericKeypad @bind-IsOpen="ShowKeypad" InitialValue="@KeypadInitialValue" OnConfirmed="OnKeypadConfirmed" />
+
+<CopyBudgetSheet @bind-IsOpen="ShowCopySheet" OnCopy="ApplyCopiedBudgets" />
+
+@code {
+    private readonly DateTime Now = DateTime.Now;
+
+    private decimal MonthlyBudget;
+    private List<GastaApp.Services.CategoryBudgetRow> CategoryRows = new();
+    private readonly Dictionary<int, decimal> _edits = new();
+
+    private bool ShowKeypad;
+    private int? _editingCategoryId;
+    private bool _editingOverall;
+
+    private decimal AllocatedTotal => _edits.Values.Sum();
+
+    private decimal KeypadInitialValue => _editingOverall
+        ? MonthlyBudget
+        : (_editingCategoryId.HasValue ? GetAmount(_editingCategoryId.Value) : 0);
+
+    private bool ShowCopySheet;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var summary = await SummaryService.GetMonthSummaryAsync(Now.Year, Now.Month);
+        MonthlyBudget = summary.Budget;
+
+        CategoryRows = await SummaryService.GetCategoryBudgetRowsAsync(Now.Year, Now.Month);
+        foreach (var row in CategoryRows)
+        {
+            _edits[row.CategoryId] = row.Amount;
+        }
+    }
+
+    private decimal GetAmount(int categoryId) => _edits.TryGetValue(categoryId, out var v) ? v : 0;
+
+    private void OpenKeypad(int? categoryId)
+    {
+        _editingCategoryId = categoryId;
+        _editingOverall = categoryId is null;
+        ShowKeypad = true;
+    }
+
+    private void OnKeypadConfirmed(decimal value)
+    {
+        if (_editingOverall)
+        {
+            MonthlyBudget = value;
+        }
+        else if (_editingCategoryId.HasValue)
+        {
+            _edits[_editingCategoryId.Value] = value;
+        }
+    }
+
+    private void ApplyCopiedBudgets((decimal Budget, List<GastaApp.Services.CategoryBudgetRow> Rows) copied)
+    {
+        MonthlyBudget = copied.Budget;
+        foreach (var row in copied.Rows)
+        {
+            _edits[row.CategoryId] = row.Amount;
+        }
+        // Nothing is saved yet — the user still reviews and taps Save, same as any
+        // other edit on this page.
+    }
+
+    private async Task Save()
+    {
+        await SummaryService.SetMonthlyBudgetAsync(Now.Year, Now.Month, MonthlyBudget);
+
+        foreach (var row in CategoryRows)
+        {
+            var newAmount = GetAmount(row.CategoryId);
+            if (newAmount != row.Amount)
+            {
+                await SummaryService.SetCategoryBudgetAsync(row.CategoryId, Now.Year, Now.Month, newAmount);
+            }
+        }
+
+        Nav.NavigateTo("");
+    }
+
+    private void Cancel() => Nav.NavigateTo("");
+}

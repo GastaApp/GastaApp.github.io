@@ -4,7 +4,6 @@
     align-items: center;
     justify-content: center;
     padding: 18px 16px;
-    border-radius: 0 0 20px 20px;
     margin: -20px -20px 0;
 }
 
@@ -13,8 +12,8 @@
     height: 32px;
     border-radius: 50%;
     border: none;
-    background: rgba(255, 255, 255, 0.35);
-    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.55);
+    color: black;
     font-size: 13px;
     cursor: pointer;
     display: flex;
@@ -28,12 +27,6 @@
     left: 16px;
 }
 
-.header-logo {
-    height: 26px;
-    max-width: 60%;
-    object-fit: contain;
-}
-
 .header-actions {
     position: absolute;
     right: 16px;
@@ -41,27 +34,44 @@
     gap: 8px;
 }
 
+/* Reuses the same 150deg primary->primary-dark gradient as MainLayout's Add FAB and
+   AddExpenseSheet's banner, so this reads as the same "hero primary surface"
+   language rather than a one-off style — works automatically across all accent
+   presets in both themes since it's built from --color-primary/--color-primary-dark. */
 .total-card {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(150deg, var(--color-primary), var(--color-primary-dark));
+    border-radius: var(--radius-lg, 20px);
+    box-shadow: 0 4px 18px color-mix(in srgb, var(--color-primary) 35%, transparent);
+    padding: 18px 20px 20px;
+    margin-top: 16px;
     display: flex;
     flex-direction: column;
     gap: 4px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    color: var(--text-primary);
-    box-shadow: var(--shadow-card);
-    border-radius: 16px;
-    padding: 16px;
-    margin: 16px 0;
+}
+
+/* Decorative "card chip" glyph, low-opacity, top-right — a cheap way to read as a
+   physical debit/credit card without needing an image asset. */
+.total-card-chip {
+    position: absolute;
+    top: 16px;
+    right: 18px;
+    color: white;
+    opacity: 0.35;
 }
 
 .total-label {
-    font-size: 11px;
-    color: var(--text-secondary);
+    font-size: 0.625rem;
+    color: rgba(255, 255, 255, 0.75);
+    letter-spacing: 0.5px;
 }
 
 .total-amount {
-    font-size: 22px;
-    font-weight: bold;
+    font-size: 1.75rem;
+    font-weight: 600;
+    font-family: var(--font-display);
+    color: white;
 }
 
 .transaction-list {

@@ -1,3 +1,16 @@
+/* Sticky, not a separate scroll container — rides on the page's normal scroll, so
+   the tab content below scrolls the page as usual while this block stays pinned to
+   the top once you scroll past it. Needs an opaque background since scrolled
+   content (category rings, payment rows) will pass directly underneath it. */
+.home-fixed {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--bg);
+    margin: -20px -20px 0;
+    padding: 20px 20px 4px;
+}
+
 .header {
     display: flex;
     align-items: center;
@@ -32,42 +45,75 @@
         width: 28px;
     }
 
-.screen-title {
-    font-size: 0.75rem;
-    opacity: 0.55;
-}
+    .month-switcher strong {
+        font-size: 0.813rem;
+        letter-spacing: 0.4px;
+    }
 
-.card {
+/* Monthly Overview card */
+.overview-card {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg, 20px);
-    padding: 16px;
-    color: var(--text-primary);
+    padding: 18px;
     box-shadow: var(--shadow-card);
+    margin-top: 16px;
 }
 
-.ghost-button {
-    background: transparent;
-    border: 1.5px solid var(--color-primary);
-    color: var(--color-primary);
-    border-radius: 12px;
-    padding: 8px;
-    font-weight: 600;
+.eyebrow {
+    display: block;
     font-size: 0.625rem;
-    cursor: pointer;
+    color: var(--text-secondary);
+    letter-spacing: 0.6px;
+}
+
+.overview-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.overview-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.overview-illustration {
+    width: 114px;
+    height: 115px;
+    flex-shrink: 0;
+    margin-right: -8px;
+}
+
+.overview-illustration-dark {
+    width: 130px !important;
+    height: 105px;
+    flex-shrink: 0;
+    margin-right: -12px;
+    margin-top: 4px;
+}
+
+.overview-label {
+    display: block;
+    font-size: 0.625rem;
+    color: var(--text-secondary);
+    margin-top: 8px;
+    opacity: 0.8;
 }
 
 .amount-display {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
     font-weight: 600;
-    margin: 6px 0;
+    font-family: var(--font-display);
 }
 
 .progress-track {
-    height: 8px;
+    height: 7px;
     background: var(--surface-alt);
     border-radius: 4px;
     overflow: hidden;
+    margin-top: 10px;
 }
 
 .progress-fill {
@@ -77,10 +123,24 @@
     transition: width 0.3s ease;
 }
 
+.progress-captions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-size: 0.625rem;
+    color: var(--text-secondary);
+    font-family: var(--font-display);
+}
+
+.overview-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 14px 0;
+}
+
 .budget-row {
     display: flex;
     justify-content: space-between;
-    margin-top: 12px;
 }
 
     .budget-row div {
@@ -96,6 +156,10 @@
     font-family: var(--font-display);
 }
 
+    .caption.over-budget {
+        color: var(--danger);
+    }
+
 .success {
     color: var(--success);
 }
@@ -104,12 +168,24 @@
     color: var(--danger);
 }
 
+.ghost-button {
+    background: transparent;
+    border: 1.5px solid var(--color-primary);
+    color: var(--color-primary);
+    border-radius: 12px;
+    padding: 8px;
+    font-weight: 600;
+    font-size: 0.625rem;
+    cursor: pointer;
+}
+/* Tabs */
 .tabs {
     display: flex;
     gap: 18px;
     align-items: center;
     border-bottom: 1px solid var(--border);
     padding-bottom: 4px;
+    margin-top: 20px;
 }
 
 .tab {
@@ -148,7 +224,31 @@
     cursor: pointer;
     margin-bottom: 4px;
 }
+/* Payments — grid */
+.chip-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 14px;
+}
 
+.chip {
+    border-radius: 16px;
+    padding: 14px;
+    box-shadow: var(--shadow-chip);
+}
+
+    .chip img {
+        height: 24px;
+        max-width: 75%;
+    }
+
+    .chip strong {
+        display: block;
+        margin-top: 8px;
+        font-size: 0.875rem;
+    }
+/* Payments — list */
 .payment-list {
     display: flex;
     flex-direction: column;
@@ -185,31 +285,10 @@
     font-weight: 600;
     margin-left: auto;
 }
-
-.chip-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-top: 14px;
-}
-
-.chip {
-    border-radius: 16px;
-    padding: 14px;
-    box-shadow: var(--shadow-chip);
-}
-
-    .chip img {
-        height: 24px;
-        max-width: 75%;
-    }
-
-    .chip strong {
-        display: block;
-        margin-top: 8px;
-        font-size: 0.875rem;
-    }
-
+/* Categories — ring grid (existing view, now the alternate).
+       Ring size bumped 82px -> 96px (bigger) and stroke-width 10 -> 13 (thicker,
+       independent of the size increase). Circle radius reduced 26 -> 24 in Home.razor
+       to keep the thicker stroke from clipping against the 64x64 SVG viewBox. */
 .category-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -227,36 +306,138 @@
 
 .ring-wrap {
     position: relative;
-    width: 64px;
-    height: 64px;
+    width: 96px;
+    height: 96px;
 }
 
-.ring-logo {
+::deep .ring-logo {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    max-width: 38px;
-    max-height: 26px;
 }
 
+/* scaleX(-1) mirrors the ring horizontally around its own center, which passes
+   exactly through the 12 o'clock point — so that start position stays fixed while
+   the sweep direction flips from clockwise (right) to counter-clockwise (left).
+   Order matters: rotate(-90deg) applies first (innermost) to move the circle's
+   native start point to 12 o'clock, THEN scaleX(-1) applies as the outer mirror. */
 .ring {
-    width: 64px;
-    height: 64px;
-    transform: rotate(-90deg);
+    width: 96px;
+    height: 96px;
+    transform: scaleX(-1) rotate(-90deg);
 }
 
 .ring-track {
     fill: none;
-    stroke-width: 8;
-    /* stroke color now set inline per-category via ColorHelper.Lighten(),
-       this is just a neutral fallback if that's ever omitted */
-    stroke: var(--surface-alt);
+    stroke-width: 13;
 }
 
 .ring-fill {
     fill: none;
-    stroke-width: 8;
+    stroke-width: 13;
     stroke-linecap: round;
     transition: stroke-dashoffset 0.3s ease;
 }
+/* Categories — list (new default view, matches reference).
+   ONE unified card with divider lines between rows, not separate floating cards.
+   Shadow lives on the WRAPPER (unclipped) and overflow:hidden lives on the inner
+   .category-list (to clip row corners/dividers into the rounded shape) — putting
+   both box-shadow and overflow:hidden on the same element clips the shadow itself,
+   since overflow:hidden clips anything rendered outside that element's own box. */
+.category-list-wrap {
+    margin-top: 14px;
+    border-radius: 20px;
+    box-shadow: var(--shadow-soft);
+}
+
+.category-list {
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.category-list-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 8px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+}
+
+    .category-list-row:last-child {
+        border-bottom: none;
+    }
+
+.cat-list-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+    .cat-list-icon img {
+        max-width: 32px;
+        max-height: 18px;
+    }
+
+.cat-list-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.cat-list-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cat-list-name {
+    flex: 1;
+    font-weight: 600;
+    font-size: 0.75rem;
+    font-family: var(--font-display);
+}
+
+.cat-list-pct {
+    font-weight: 500;
+    font-size: 0.75rem;
+    margin-right: 8px;
+    font-family: var(--font-display);
+}
+
+.chevron {
+    color: var(--text-secondary);
+    font-size: 0.688rem;
+}
+
+.cat-list-track {
+    height: 5px;
+    background: var(--surface-alt);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 6px;
+}
+
+.cat-list-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.cat-list-amounts {
+    font-size: 0.625rem;
+    color: var(--text-secondary);
+    font-family: var(--font-display);
+}
+
+    .cat-list-amounts.over-budget {
+        color: var(--danger);
+        font-weight: 600;
+    }

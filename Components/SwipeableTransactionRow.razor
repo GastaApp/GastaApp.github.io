@@ -1,4 +1,5 @@
-@* Usage: <SwipeableTransactionRow Item="item" OnTap="OpenEdit" OnDelete="DeleteExpense" /> *@
+@* Usage: <SwipeableTransactionRow Item="item" OnTap="OpenEdit" OnDelete="DeleteExpense" ShowPaymentMethod="true" /> *@
+@using GastaApp.Helpers
 @inject IJSRuntime JS
 
 <div class="transaction-row-wrap">
@@ -11,8 +12,8 @@
          @onpointerup="OnPointerUp"
          @onpointercancel="OnPointerCancel"
          @onclick="OnClick">
-        <div class="tx-icon" style="background:@Item.CategoryColorKey;">
-            <img src="images/categories/@(Item.CategoryLogo).png" />
+        <div class="tx-icon" style="background:@ColorHelper.Lighten(Item.CategoryColorKey, 0.75);">
+            <CategoryIcon IconKey="@Item.CategoryIconKey" LogoImage="@Item.CategoryLogo" Color="@Item.CategoryColorKey" Size="20" />
         </div>
         <div class="tx-info">
             <span class="tx-category">@Item.CategoryName</span>
@@ -20,7 +21,25 @@
             {
                 <span class="tx-notes">@Item.Notes</span>
             }
-            <span class="tx-date">@Item.Date.ToString("MMM d")</span>
+           @*  <span class="tx-meta-row">
+                <span class="tx-date">@Item.Date.ToString("MMM d")</span>
+                @if (ShowPaymentMethod && !string.IsNullOrWhiteSpace(Item.PaymentMethodName))
+                {
+                    <span class="tx-pm">
+                        <PaymentMethodIcon LogoImage="@Item.PaymentMethodLogo" Name="@Item.PaymentMethodName" ShowLabelWithFallback="true" LabelFallbackSize="0.65rem" ColorKey="@Item.PaymentMethodColorKey" ShowBackground="false" Size="12" />
+                    </span>
+                }
+            </span> *@
+            <span class="tx-meta-row">
+                <span class="tx-date">@Item.Date.ToString("MMM d")</span>
+                @if (ShowPaymentMethod && !string.IsNullOrWhiteSpace(Item.PaymentMethodName))
+                {
+                    <span class="tx-pm">
+                        <span class="tx-pm-dot" style="background:@(Item.PaymentMethodColorKey ?? "#9AA0A6");"></span>
+                        <span>@Item.PaymentMethodName</span>
+                    </span>
+                }
+            </span>
         </div>
         <strong class="tx-amount">@Item.Amount.ToString("₱#,##0.00")</strong>
     </div>
@@ -30,6 +49,11 @@
     [Parameter, EditorRequired] public GastaApp.Services.ExpenseListItem Item { get; set; } = default!;
     [Parameter] public EventCallback<int> OnTap { get; set; }
     [Parameter] public EventCallback<int> OnDelete { get; set; }
+
+    // Off by default — ExpenseListPage doesn't need this (its header already IS the
+    // payment method), so it never sets this parameter and renders exactly as before.
+    // Only AllTransactionsPage (spanning every payment method) turns it on.
+    [Parameter] public bool ShowPaymentMethod { get; set; } = false;
 
     private ElementReference _rowRef;
     private double _offset;
@@ -48,21 +72,14 @@
         _startX = e.ClientX;
         _startOffset = _offset;
         _dragMoved = false;
-
-        // Keeps the drag tracking smooth if the finger moves fast/far — not the fix
-        // for tap reliability (that's the native click event below), just makes the
-        // swipe gesture itself feel consistent regardless of what's visually under
-        // the finger as it moves.
         await JS.InvokeVoidAsync("gastaPointer.capture", _rowRef, e.PointerId);
     }
 
     private void OnPointerMove(PointerEventArgs e)
     {
         if (!_dragging) return;
-
         var dx = e.ClientX - _startX;
         if (Math.Abs(dx) > DragThreshold) _dragMoved = true;
-
         _offset = Math.Clamp(_startOffset + dx, RevealOffset, 0);
     }
 
@@ -70,34 +87,21 @@
     {
         if (!_dragging) return;
         _dragging = false;
-
         if (_dragMoved)
         {
-            // Snap fully open or closed based on how far it was dragged. If this
-            // WASN'T a drag, deliberately do nothing here — the browser's native
-            // click event (fired right after, for a plain tap) handles that case
-            // below in OnClick. Native click already correctly distinguishes a tap
-            // from a scroll/drag on real touch hardware; re-deriving that ourselves
-            // from raw pointer timing/distance is exactly what kept failing before.
             _offset = _offset < -SnapThreshold ? RevealOffset : 0;
         }
     }
 
     private async Task OnClick()
     {
-        // A genuine drag was already handled in OnPointerUp above. Browsers can
-        // still fire a trailing click after a small drag in some cases, so guard
-        // against double-handling it here.
         if (_dragMoved)
         {
             _dragMoved = false;
             return;
         }
-
         if (_offset < -1)
         {
-            // Row is currently revealed — a tap on it just closes it again,
-            // matching native SwipeView's "tap elsewhere to close" behavior.
             _offset = 0;
         }
         else

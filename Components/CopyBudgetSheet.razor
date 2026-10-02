@@ -1,0 +1,116 @@
+@* Usage: <CopyBudgetSheet @bind-IsOpen="ShowCopySheet" OnCopy="ApplyCopiedBudgets" /> *@
+@inject GastaApp.Services.ExpenseSummaryService SummaryService
+
+<div class="sheet-scrim @(IsOpen ? "open" : "")" @onclick="Close"></div>
+<div class="sheet-panel @(IsOpen ? "open" : "")" @onclick:stopPropagation="true">
+    <div class="sheet-header">
+        <span class="sheet-title">Copy Budget</span>
+        <button class="close-btn" @onclick="Close">&#10005;</button>
+    </div>
+
+    <p class="intro-text">Select a previous month you want to copy from.</p>
+
+    <div class="month-switcher">
+        <span @onclick="PreviousMonth">&#10094;</span>
+        <strong>@SelectedMonth.ToString("MMMM yyyy").ToUpper()</strong>
+        <span style="text-align:end;" class="@(CanGoNext ? "" : "disabled")" @onclick="NextMonth">&#10095;</span>
+    </div>
+
+    <div class="preview-list-wrap">
+        <div class="preview-list">
+            @if (Loading)
+            {
+                <div class="empty-state">Loading...</div>
+            }
+            else if (PreviewRows.Count == 0)
+            {
+                <div class="empty-state">No category budgets were set for this month.</div>
+            }
+            else
+            {
+                @foreach (var row in PreviewRows)
+                {
+                    <div class="preview-row">
+                        <div class="preview-icon" style="background:@ColorHelper.Lighten(row.ColorKey, 0.75);">
+                            <CategoryIcon IconKey="@row.IconKey" LogoImage="@row.LogoImage" Color="@row.ColorKey" Size="16" />
+                        </div>
+                        <span class="preview-name">@row.Name</span>
+                        <span class="preview-amount">@row.Amount.ToString("₱#,##0")</span>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+
+    <p class="warning-text">
+        &#9888; Copying will overwrite all current budget entries for this month.
+    </p>
+
+    <div class="action-row">
+        <button class="close-button" @onclick="Close">Close</button>
+        <button class="copy-button" @onclick="CopyAll">Copy All</button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public EventCallback<(decimal Budget, List<GastaApp.Services.CategoryBudgetRow> Rows)> OnCopy { get; set; }
+
+    private bool _wasOpen;
+    private bool Loading;
+    private DateTime SelectedMonth;
+    private decimal PreviewBudget;
+    private List<GastaApp.Services.CategoryBudgetRow> PreviewRows = new();
+
+    private DateTime LastAllowedMonth => new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(-1);
+    private bool CanGoNext => SelectedMonth < LastAllowedMonth;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IsOpen && !_wasOpen)
+        {
+            // Default to last month every time the sheet opens fresh.
+            SelectedMonth = LastAllowedMonth;
+            await LoadPreview();
+        }
+        _wasOpen = IsOpen;
+    }
+
+    private async Task LoadPreview()
+    {
+        Loading = true;
+        StateHasChanged();
+
+        var summary = await SummaryService.GetMonthSummaryAsync(SelectedMonth.Year, SelectedMonth.Month);
+        PreviewBudget = summary.Budget;
+        PreviewRows = await SummaryService.GetCategoryBudgetRowsAsync(SelectedMonth.Year, SelectedMonth.Month);
+
+        Loading = false;
+    }
+
+    private async Task PreviousMonth()
+    {
+        SelectedMonth = SelectedMonth.AddMonths(-1);
+        await LoadPreview();
+    }
+
+    private async Task NextMonth()
+    {
+        if (!CanGoNext) return;
+        SelectedMonth = SelectedMonth.AddMonths(1);
+        await LoadPreview();
+    }
+
+    private async Task CopyAll()
+    {
+        await OnCopy.InvokeAsync((PreviewBudget, PreviewRows));
+        await Close();
+    }
+
+    private async Task Close()
+    {
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+    }
+}

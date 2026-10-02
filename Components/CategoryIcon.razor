@@ -1,0 +1,42 @@
+@* Usage: <CategoryIcon IconKey="category.IconKey" LogoImage="category.LogoImage" Size="22" Color="category.ColorKey" class="ring-logo" /> *@
+@using GastaApp.Helpers
+
+@if (!string.IsNullOrEmpty(IconKey) && CategoryIconSet.Icons.TryGetValue(IconKey, out var svgInner))
+{
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="@StrokeWidth" stroke-linecap="round" stroke-linejoin="round"
+         width="@Size" height="@Size"
+         style="color:@(Color ?? "currentColor");@Style"
+         @attributes="AdditionalAttributes">
+        @((MarkupString)svgInner)
+    </svg>
+}
+else if (!string.IsNullOrEmpty(LogoImage))
+{
+    <img src="images/categories/@(LogoImage).png"
+         style="width:@(Size)px;height:@(Size)px;object-fit:contain;@Style"
+         @attributes="AdditionalAttributes" />
+}
+
+@code {
+    [Parameter] public string? IconKey { get; set; }
+    [Parameter] public string? LogoImage { get; set; }
+    [Parameter] public int Size { get; set; } = 22;
+
+    // Sets SVG `color`, which stroke="currentColor" inherits. Without this the icon
+    // renders in the default text color instead of the category's own ColorKey —
+    // this was the actual cause of icons looking flat/mismatched against colored
+    // rings and badges, not the stroke style itself.
+    [Parameter] public string? Color { get; set; }
+
+    // Slightly bolder than the nav icons' 2px by default — at 22-42px inside a
+    // colored badge, 2px reads thin/washed out. Nav icons stay at 2 (unaffected,
+    // they don't use this component). Bump further per-instance if still weak.
+    [Parameter] public double StrokeWidth { get; set; } = 2.25;
+
+    // Free-form style passthrough (e.g. absolute positioning for .ring-logo) since
+    // `style` isn't in AdditionalAttributes when the component also sets its own.
+    [Parameter] public string? Style { get; set; }
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object>? AdditionalAttributes { get; set; }
+}

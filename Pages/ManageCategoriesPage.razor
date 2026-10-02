@@ -1,0 +1,59 @@
+@page "/managecategories"
+@inject GastaApp.Data.Repositories.ICategoryRepository CategoryRepository
+@inject NavigationManager Nav
+
+<div class="top-fixed">
+<div class="header-bar">
+    <button class="icon-btn" @onclick="@(() => Nav.NavigateTo("settings"))">&#10094;</button>
+</div>
+
+<div class="header-content">
+            <div class="header-content-left">
+                <span class="header-title">Categories</span> 
+                <span class="intro-text">
+                    Para alam kung food ba ’yan o “deserve ko ’to.” @* 😭 *@
+                    @* Para alam natin kung saan ka mahilig gumastos. 👀 *@
+                    @* Lagyan ng category para walang gastos na nawawala. 👀 *@
+                </span>
+            </div>
+            <img src="images/mascot-settings.gif" />
+        </div>
+        </div>
+
+<div class="category-list-wrap">
+    <div class="category-list">
+        @foreach (var category in Categories)
+        {
+            <div class="category-row" @onclick="@(() => OpenEdit(category.Id))">
+                <div class="cat-icon" style="background:@ColorHelper.Lighten(category.ColorKey, 0.75);">
+                    <CategoryIcon IconKey="@category.IconKey" LogoImage="@category.LogoImage" Color="@category.ColorKey" Size="20" />
+                </div>
+                <span class="cat-name">@category.Name</span>
+                <span class="chevron">&#10095;</span>
+            </div>
+        }
+    </div>
+</div>
+
+<button class="add-button" @onclick="() => OpenEdit(null)">+ Add Category</button>
+
+<CategoryEditSheet @bind-IsOpen="ShowEdit" CategoryId="EditingCategoryId" OnSaved="LoadAsync" />
+
+@code {
+    private List<GastaApp.Models.Category> Categories = new();
+    private bool ShowEdit;
+    private int? EditingCategoryId;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        Categories = await CategoryRepository.GetActiveOrderedAsync();
+    }
+
+    private void OpenEdit(int? categoryId)
+    {
+        EditingCategoryId = categoryId;
+        ShowEdit = true;
+    }
+}

@@ -1,0 +1,41 @@
+﻿@* Usage: <SortSheet @bind-IsOpen="ShowSort" Title="Sort Expenses" Choices="Choices" SelectedValue="current" OnSelected="val => ..." /> *@
+<div class="sheet-scrim @(IsOpen ? "open" : "")" @onclick="Close"></div>
+<div class="sheet-panel @(IsOpen ? "open" : "")" @onclick:stopPropagation="true">
+    <div class="sheet-header">
+        <span class="sheet-title">@Title</span>
+        <button class="close-btn" @onclick="Close">&#10005;</button>
+    </div>
+    <div class="sheet-body">
+        @foreach (var choice in Choices)
+        {
+            <div class="choice-row @(SelectedValue == choice.Value ? "selected" : "")" @onclick="() => Select(choice.Value)">
+                <span>@choice.Label</span>
+                @if (SelectedValue == choice.Value)
+                {
+                    <span class="check">&#10003;</span>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public string Title { get; set; } = "Sort";
+    [Parameter] public List<(string Value, string Label)> Choices { get; set; } = new();
+    [Parameter] public string SelectedValue { get; set; } = "";
+    [Parameter] public EventCallback<string> OnSelected { get; set; }
+
+    private async Task Select(string value)
+    {
+        await OnSelected.InvokeAsync(value);
+        await Close();
+    }
+
+    private async Task Close()
+    {
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+    }
+}

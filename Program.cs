@@ -16,10 +16,14 @@ builder.Services.AddScoped<IExpenseRepository, ExpenseRepository>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<IPaymentMethodRepository, PaymentMethodRepository>();
 builder.Services.AddScoped<IBudgetRepository, BudgetRepository>();
+builder.Services.AddScoped<ICategoryBudgetRepository, CategoryBudgetRepository>();
 builder.Services.AddScoped<ExpenseSummaryService>();
 builder.Services.AddScoped<SeedService>();
 builder.Services.AddScoped<ThemeService>();
+builder.Services.AddScoped<AccentColorService>();
+builder.Services.AddScoped<AddExpenseUiService>();
 builder.Services.AddSingleton<AlertService>();
+builder.Services.AddScoped<UserProfileService>();
 
 var host = builder.Build();
 
@@ -33,7 +37,7 @@ var host = builder.Build();
 // created child scope. Blazor WASM only really has one long-lived scope for the app's
 // whole session, so a manually created-and-disposed scope tears down its own separate
 // IndexedDbService instance (and the JS module reference it holds) right after this
-// block — which is what threw the AsyncDisposableServiceDispose error. Resolving from
+// block â€” which is what threw the AsyncDisposableServiceDispose error. Resolving from
 // the root keeps the same IndexedDbService instance alive for the rest of the app.
 var db = host.Services.GetRequiredService<IndexedDbService>();
 await db.InitializeAsync();

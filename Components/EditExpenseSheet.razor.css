@@ -5,7 +5,7 @@
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.25s ease;
-    z-index: 20;
+    z-index: 20; 
 }
 
     .sheet-scrim.open {
@@ -19,10 +19,11 @@
     right: 0;
     bottom: 0;
     max-height: 88vh;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
     background: var(--surface);
     border-radius: 20px 20px 0 0;
-    padding: 20px 18px 28px;
+    overflow: hidden; /* clips the banner's corners to match the sheet's own rounding */
     transform: translateY(100%);
     transition: transform 0.3s ease;
     z-index: 21;
@@ -33,23 +34,64 @@
         box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
     }
 
+.sheet-banner {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 18px;
+    background: linear-gradient(150deg, var(--color-primary), var(--color-primary-dark));
+    box-shadow: 0 2px 7px color-mix(in srgb, var(--color-primary) 30%, transparent);
+    position: relative;
+    z-index: 1;
+}
+
 .sheet-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 14px;
-}
+} 
 
 .sheet-title {
     font-weight: bold;
-    font-size: 16px;
+    font-size: 1rem;
+    font-family: var(--font-display);
+}
+
+.banner-title {
+    color: white;
+    font-weight: bold;
+    font-size: 0.875rem;
+    letter-spacing: 0.3px;
+    font-family: var(--font-display);
+}
+
+.close-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.28);
+    color: white;
+    font-size: 0.813rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.sheet-body {
+    padding: 20px 18px 28px;
+    overflow-y: auto;
 }
 
 .field-label {
     display: block;
-    font-size: 11px;
+    font-size: 0.688rem;
     color: var(--text-secondary);
-    margin: 14px 0 6px;
+    margin: 14px 0 4px;
 }
 
     .field-label:first-of-type {
@@ -61,16 +103,19 @@
     box-sizing: border-box;
     border: 1px solid var(--border);
     border-radius: 12px;
-    padding: 12px 14px;
+    padding: 0 14px;
+    height: 48px;
     background: var(--surface-alt);
-    font-size: 14px;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    appearance: none;
+    -webkit-appearance: none;
+    font-weight: 600;
 }
 
     .field-input.tappable {
-        cursor: pointer;
-        font-weight: bold;
-        display: flex;
-        align-items: center;
+        cursor: pointer; 
         justify-content: space-between;
     }
 
@@ -80,23 +125,57 @@
         gap: 10px;
     }
 
-        .field-input.category-field .inline-icon {
-            width: 22px;
-            height: 22px;
-        }
-
     .field-input.notes {
-        resize: vertical;
+        height: auto;
         min-height: 60px;
+        resize: vertical;
+        align-items: flex-start;
+        padding-top: 12px;
+        padding-bottom: 12px;
         font-family: inherit;
+        color: var(--text-primary);
     }
 
-.field-input[type="date"] {
-    color-scheme: light;
+
+.date-field-wrap {
+    position: relative;
 }
 
-[data-theme="dark"] .field-input[type="date"] {
-    color-scheme: dark;
+.overlay-date-input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    border: none;
+    padding: 0;
+    margin: 0;
+    /* Real, tappable, full-size — this IS the interaction now, not a JS-triggered
+       proxy. That's what avoids iOS's user-activation-through-interop problem
+       entirely, rather than working around a symptom of it. */
+}
+
+    /* By default, only the browser's own calendar-icon glyph inside the input is
+       the actual click target for opening the picker — the rest of the box is
+       hit-testable but inert. Stretching the picker-indicator pseudo-element to
+       fill the whole input makes the entire box the click target, matching the
+       visible .field-input's full size. WebKit/Chromium only — Firefox has no
+       equivalent pseudo-element, so on Firefox this falls back to icon-only, which
+       isn't a practical concern for an iOS/Android-focused PWA. */
+    .overlay-date-input::-webkit-calendar-picker-indicator {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+.chevron-icon {
+    color: var(--text-secondary);
+    flex-shrink: 0;
 }
 
 .placeholder-text {
@@ -106,40 +185,35 @@
 
 .chevron {
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: normal;
 }
 
 .chip-wrap {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    display: flex;
+    flex-wrap: wrap;
     gap: 8px;
 }
 
 .pm-chip {
-    position: relative;
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    height: 54px;
-    border-radius: 14px;
-    padding: 6px;
-    background: var(--LogoChipBackground, #ffffff);
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: var(--surface-alt);
     border: 2px solid var(--border);
-    box-shadow: var(--shadow-soft);
+    font-size: 0.625rem;
+    font-weight: 500;
+    font-family: var(--font-display);
     cursor: pointer;
+    white-space: nowrap;
 }
-
-    .pm-chip img {
-        max-width: 85%;
-        max-height: 26px;
-        object-fit: contain;
-    }
 
     .pm-chip.selected {
         border-color: var(--color-primary);
-        border-width: 2.5px;
-        box-shadow: var(--shadow-chip);
+        color: var(--color-primary);
+        background: color-mix(in srgb, var(--color-primary) 12%, var(--surface-alt));
     }
 
 .check-badge {
@@ -151,7 +225,24 @@
     border-radius: 50%;
     background: var(--color-primary);
     color: white;
-    font-size: 10px;
+    font-size: 0.625rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--surface);
+}
+
+.check-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    color: white;
+    font-size: 0.625rem;
     font-weight: bold;
     display: flex;
     align-items: center;
@@ -170,9 +261,9 @@
     padding: 14px;
     border: none;
     border-radius: 14px;
-    font-size: 15px;
+    font-weight: 600;
+    font-size: 0.875rem;
     cursor: pointer;
-    font-family: var(--font-display);
 }
 
 .save-button {

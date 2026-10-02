@@ -1,0 +1,224 @@
+﻿@page "/onboarding"
+@layout GastaApp.Layout.OnboardingLayout
+@inject GastaApp.Services.UserProfileService UserProfile
+@inject GastaApp.Services.ThemeService ThemeService
+@inject GastaApp.Services.AccentColorService AccentColor
+@inject NavigationManager Nav
+
+<div class="onboarding-page">
+    <div class="theme-toggle-row">
+        <button class="theme-toggle-btn" @onclick="ToggleTheme" aria-label="Toggle theme">
+            @(CurrentTheme == "Dark" ? "☀️" : "🌙")
+        </button>
+    </div>
+
+    @if (Step == WelcomeStep)
+    {
+        <div class="welcome-step">
+            <div class="icon-outer @(CurrentTheme == "Dark" ? "dark" : "")">
+                <div class="icon-crop">
+                    <img src="images/gasta-icon.gif" class="app-icon-gif" alt="GastaApp" />
+                </div>
+            </div>
+            <span class="welcome-title">Welcome to GastaApp</span>
+            <span class="welcome-body">
+                Track every peso, set smart budgets, and see exactly where your
+                money goes — right from your phone.
+            </span>
+
+            <button class="get-started-button" @onclick="() => Step = 1">Get Started</button>
+
+            <div class="hints-list">
+                <span class="hint-row">📶 Works fully offline</span>
+                <span class="hint-row">🔒 Your data stays on this device</span>
+            </div>
+        </div>
+    }
+    else if (Step <= SlideCount)
+    {
+        var slideIndex = Step - 1;
+        var isThemeSlide = slideIndex == ThemeSlideIndex;
+
+        <div class="slide-content @(isThemeSlide ? "theme-slide" : "")">
+            @if (!isThemeSlide)
+            {
+                <div class="slide-icon">
+                    <img src="@SlidePng[slideIndex]" class="slide-image" style="height: @(SlidePngHeight[slideIndex]);" />
+                </div>
+                <span class="slide-title">@SlideTitles[slideIndex]</span>
+                <span class="slide-body">@SlideBodies[slideIndex]</span>
+            }
+            else
+            {
+                <div class="theme-slide-header">
+                    <div class="slide-icon slide-icon-compact">
+                        <img src="@SlidePng[slideIndex]" class="slide-image" style="height: @(SlidePngHeight[slideIndex]);" />
+                    </div>
+                    <span class="slide-title">@SlideTitles[slideIndex]</span>
+                    <span class="slide-body">@SlideBodies[slideIndex]</span>
+                </div>
+
+                <div class="theme-controls-scroll">
+                    <div class="segmented">
+                        <button class="segment @(CurrentTheme == "Light" ? "active" : "")" @onclick='() => SetTheme("Light")'>
+                            ☀️ Light
+                        </button>
+                        <button class="segment @(CurrentTheme == "Dark" ? "active" : "")" @onclick='() => SetTheme("Dark")'>
+                            🌙 Dark
+                        </button>
+                    </div>
+
+                    <span class="accent-label">Accent Color</span>
+                    <div class="accent-rect-grid">
+                        @foreach (var preset in GastaApp.Services.AccentColorService.Presets)
+                        {
+                            <div class="accent-rect @(SelectedAccentId == preset.Id ? "selected" : "")"
+                                 style="background:linear-gradient(135deg, @preset.LightPrimary, @preset.LightPrimaryDark);"
+                                 @onclick="() => SelectAccent(preset.Id)">
+                                @if (SelectedAccentId == preset.Id)
+                                {
+                                    <span class="accent-rect-check">&#10003;</span>
+                                }
+                                <span class="accent-rect-name">@preset.Name</span>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="bg-toggle-row">
+                        <div class="bg-toggle-text">
+                            <span class="bg-toggle-title">Also change background</span>
+                            <span class="bg-toggle-sub">Tint cards and surfaces to match your accent in Light mode</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" @bind="BackgroundTintEnabled" @bind:after="OnBackgroundTintToggled" />
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="bg-toggle-note">Dark mode always stays neutral, regardless of this setting.</div>
+                </div>
+            }
+        </div>
+
+        <div class="dots-row">
+            @for (var i = 0; i < SlideCount; i++)
+            {
+                var idx = i;
+                <span class="dot @(slideIndex == idx ? "active" : "")"></span>
+            }
+        </div>
+
+        <div class="nav-row">
+            <button class="back-button" @onclick="PrevStep">Back</button>
+            <button class="next-button" @onclick="NextStep">Next</button>
+        </div>
+    }
+    else
+    {
+        <div class="name-step">
+            <div class="slide-icon">
+                <img src="images/gasta-onboard4.png" class="slide-image" style="height:170px;" />
+            </div>
+            <span class="name-title">What should we call you?</span>
+            <span class="name-subtitle">This shows up on your home screen.</span>
+
+            <input class="name-input" @bind="Nickname" @bind:event="oninput"
+                   placeholder="e.g. Juan" maxlength="20" />
+
+            <button class="get-started-button" @onclick="Finish" disabled="@(string.IsNullOrEmpty(Nickname))">Let's G!</button>
+        </div>
+
+        <div class="nav-row">
+            <button class="back-button" @onclick="PrevStep">Back</button>
+        </div>
+    }
+</div>
+
+@code {
+    private const int WelcomeStep = 0;
+    private const int SlideCount = 4;
+    private const int ThemeSlideIndex = 3; // last slide (index 3 of 4) is the theme picker
+    private const int NameStep = SlideCount + 1;
+
+    private int Step = WelcomeStep;
+    private string Nickname = "";
+    private string CurrentTheme = "Light";
+    private string SelectedAccentId = "purple";
+    private bool BackgroundTintEnabled;
+
+    private static readonly string[] SlideTitles =
+    {
+        "Track Every Peso",
+        "Set Smart Budgets",
+        "See the Big Picture",
+        "Make It Yours"
+    };
+
+    private static readonly string[] SlideBodies =
+    {
+        "Log expenses in seconds — organized by category and payment method.",
+        "Set a monthly budget and watch your progress update in real time.",
+        "Get clear insights into your spending trends, all in one place.",
+        "Pick a look — you can always change this later in Settings."
+    };
+
+    private static readonly string[] SlidePng =
+    {
+        "images/gasta-onboard1.png",
+        "images/gasta-onboard2.png",
+        "images/gasta-onboard3.png",
+        "images/gasta-onboard5.png",
+    };
+
+    private static readonly string[] SlidePngHeight =
+    {
+        "185px",
+        "140px",
+        "185px",
+        "95px",
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        CurrentTheme = await ThemeService.GetCurrentAsync();
+        SelectedAccentId = await AccentColor.GetCurrentPresetIdAsync();
+        BackgroundTintEnabled = await AccentColor.GetBackgroundTintEnabledAsync();
+    }
+
+    private async Task ToggleTheme() => await SetTheme(CurrentTheme == "Dark" ? "Light" : "Dark");
+
+    private async Task SetTheme(string option)
+    {
+        CurrentTheme = option;
+        await ThemeService.ApplyAsync(option);
+    }
+
+    private async Task SelectAccent(string presetId)
+    {
+        SelectedAccentId = presetId;
+        await AccentColor.SetAsync(presetId); // applies instantly, matches Settings' behavior
+    }
+
+    private async Task OnBackgroundTintToggled() =>
+        await AccentColor.SetBackgroundTintEnabledAsync(BackgroundTintEnabled);
+
+    private void NextStep()
+    {
+        if (Step < SlideCount) Step++;
+        else Step = NameStep;
+    }
+
+    private void PrevStep()
+    {
+        if (Step > 1) Step--;
+        else Step = WelcomeStep;
+    }
+
+    private async Task Finish()
+    {
+        if (!string.IsNullOrWhiteSpace(Nickname))
+            await UserProfile.SetNicknameAsync(Nickname);
+
+        await UserProfile.MarkOnboardedAsync();
+        Nav.NavigateTo("", forceLoad: false);
+    }
+}

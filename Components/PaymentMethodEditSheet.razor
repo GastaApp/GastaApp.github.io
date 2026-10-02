@@ -1,0 +1,131 @@
+﻿@* Usage: <PaymentMethodEditSheet @bind-IsOpen="ShowEdit" PaymentMethodId="id" OnSaved="LoadAsync" /> — pass PaymentMethodId="null" for Add *@
+@using GastaApp.Helpers
+@inject GastaApp.Data.Repositories.IPaymentMethodRepository PaymentMethodRepository
+
+<div class="sheet-scrim @(IsOpen ? "open" : "")" @onclick="Cancel"></div>
+<div class="sheet-panel @(IsOpen ? "open" : "")" @onclick:stopPropagation="true">
+    <div class="sheet-header">
+        <span class="sheet-title">@(PaymentMethodId is null ? "Add Payment Method" : "Edit Payment Method")</span>
+        <button class="close-btn" @onclick="Cancel">&#10005;</button>
+    </div>
+
+    <div class="sheet-body">
+        <label class="field-label">Name</label>
+        <input class="field-input" @bind="Name" @bind:event="oninput" placeholder="e.g. UnionBank" />
+
+        <label class="field-label">Color</label>
+        <div class="color-grid">
+            @foreach (var color in CategoryColorSwatches.Colors)
+            {
+                <div class="color-swatch @(SelectedColorKey == color ? "selected" : "")"
+                     style="background:@color;"
+                     @onclick="() => SelectedColorKey = color">
+                    @if (SelectedColorKey == color)
+                    {
+                        <span class="check">&#10003;</span>
+                    }
+                </div>
+            }
+        </div>
+
+        <label class="field-label">Logo</label>
+        <p class="icon-hint">Pick a bundled logo, or leave none for a colored initial badge.</p>
+        <div class="icon-grid">
+            <div class="icon-swatch @(SelectedLogoImage is null ? "selected" : "")"
+                 @onclick="() => SelectedLogoImage = null">
+                <PaymentMethodIcon Name="@(string.IsNullOrWhiteSpace(Name) ? "?" : Name)" ColorKey="@SelectedColorKey" Size="32" />
+            </div>
+            @foreach (var logo in PaymentLogoSet.Logos)
+            {
+                <div class="icon-swatch icon-swatch-logo @(SelectedLogoImage == logo ? "selected" : "")"
+                     @onclick="() => SelectedLogoImage = logo">
+                    <img src="images/payments/@(logo).png" class="icon-swatch-logo-img" />
+                </div>
+            }
+        </div>
+
+        <div class="action-row">
+            <button class="cancel-button" @onclick="Cancel">Cancel</button>
+            <button class="save-button" disabled="@(!CanSave)" @onclick="Save">Save</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public int? PaymentMethodId { get; set; }
+    [Parameter] public EventCallback OnSaved { get; set; }
+
+    private bool _wasOpen;
+    private string Name = "";
+    private string? SelectedColorKey;
+    private string? SelectedLogoImage;
+    private int _sortOrder;
+
+    // No IconKey-style "required for new" rule here — unlike categories, a payment
+    // method ALWAYS has a valid fallback (the initial-letter badge), so Logo is
+    // optional even on Add. Only Name + Color are required.
+    private bool CanSave => !string.IsNullOrWhiteSpace(Name) && SelectedColorKey is not null;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IsOpen && !_wasOpen)
+        {
+            if (PaymentMethodId is int id)
+            {
+                var existing = await PaymentMethodRepository.GetByIdAsync(id);
+                if (existing is not null)
+                {
+                    Name = existing.Name;
+                    SelectedColorKey = existing.ColorKey;
+                    // Only pre-select if it's a recognized bundled filename — anything
+                    // else (empty, or a stale/unknown value) loads as "no logo" so it
+                    // correctly shows the badge-fallback swatch as selected.
+                    SelectedLogoImage = PaymentLogoSet.Logos.Contains(existing.LogoImage) ? existing.LogoImage : null;
+                    _sortOrder = existing.SortOrder;
+                }
+            }
+            else
+            {
+                Name = "";
+                SelectedColorKey = CategoryColorSwatches.Colors.First();
+                SelectedLogoImage = null;
+                var all = await PaymentMethodRepository.GetActiveOrderedAsync();
+                _sortOrder = all.Count; // append at the end
+            }
+        }
+        _wasOpen = IsOpen;
+    }
+
+    private async Task Save()
+    {
+        if (!CanSave) return;
+
+        GastaApp.Models.PaymentMethod method;
+        if (PaymentMethodId is int id)
+        {
+            method = await PaymentMethodRepository.GetByIdAsync(id) ?? new GastaApp.Models.PaymentMethod { Id = id };
+        }
+        else
+        {
+            method = new GastaApp.Models.PaymentMethod { SortOrder = _sortOrder };
+        }
+
+        method.Name = Name.Trim();
+        method.ColorKey = SelectedColorKey!;
+        method.LogoImage = SelectedLogoImage ?? "";
+
+        await PaymentMethodRepository.SaveAsync(method);
+        await OnSaved.InvokeAsync();
+        await Close();
+    }
+
+    private async Task Cancel() => await Close();
+
+    private async Task Close()
+    {
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+    }
+}

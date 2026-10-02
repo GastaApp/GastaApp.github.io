@@ -1,0 +1,56 @@
+﻿@page "/managepaymentmethods"
+@inject GastaApp.Data.Repositories.IPaymentMethodRepository PaymentMethodRepository
+@inject NavigationManager Nav
+
+<div class="top-fixed">
+<div class="header-bar">
+    <button class="icon-btn" @onclick="@(() => Nav.NavigateTo("settings"))">&#10094;</button>
+</div>
+ 
+<div class="header-content">
+            <div class="header-content-left">
+                <span class="header-title">Payment Methods</span> 
+                <span class="intro-text"> 
+                   Cashless ka man o cash, basta wag careless. @* 😂 *@
+                   @* Cash, card, o utang sa tropa? 😂 *@
+                </span>
+            </div>
+            <img src="images/mascot-settings.gif" />
+        </div>
+        </div>
+
+<div class="category-list-wrap">
+    <div class="category-list">
+        @foreach (var method in Methods)
+        {
+            <div class="category-row" @onclick="@(() => OpenEdit(method.Id))">
+                <PaymentMethodIcon LogoImage="@method.LogoImage" Name="@method.Name" PreferIcon="true"  ColorKey="@method.ColorKey" Size="40" />
+                <span class="cat-name">@method.Name</span>
+                <span class="chevron">&#10095;</span>
+            </div>
+        }
+    </div>
+</div>
+
+<button class="add-button" @onclick="() => OpenEdit(null)">+ Add Payment Method</button>
+
+<PaymentMethodEditSheet @bind-IsOpen="ShowEdit" PaymentMethodId="EditingId" OnSaved="LoadAsync" />
+
+@code {
+    private List<GastaApp.Models.PaymentMethod> Methods = new();
+    private bool ShowEdit;
+    private int? EditingId;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        Methods = await PaymentMethodRepository.GetActiveOrderedAsync();
+    }
+
+    private void OpenEdit(int? id)
+    {
+        EditingId = id;
+        ShowEdit = true;
+    }
+}

@@ -20,7 +20,6 @@
     bottom: 0;
     background: var(--surface);
     border-radius: 20px 20px 0 0;
-    padding: 16px 16px 24px;
     transform: translateY(100%);
     transition: transform 0.28s ease;
     z-index: 41;
@@ -30,6 +29,21 @@
         transform: translateY(0);
         box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
     }
+
+.keypad-sheet-body {
+    padding: 16px 16px 24px;
+}
+
+.sheet-notch {
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+    margin: 10px auto 0;
+    /* Visual anchor only — these sheets close via scrim-tap or a Cancel/X button,
+       not drag-to-dismiss, so deliberately no cursor:grab or hover state here that
+       would imply otherwise. */
+}
 
 .keypad-history {
     min-height: 18px;
@@ -73,21 +87,21 @@
     cursor: pointer;
 }
 
-.key.digit, .key.clear, .key.backspace {
-    background: var(--surface-alt);
-    color: var(--text-secondary);
-}
+    .key.digit, .key.clear, .key.backspace {
+        background: var(--surface-alt);
+        color: var(--text-secondary);
+    }
 
-.key.op {
-    background: var(--color-primary);
-    color: white;
-    border-radius: 50%;
-    aspect-ratio: 1 / 1;
-    padding: 0;
-}
+    .key.op {
+        background: var(--color-primary);
+        color: white;
+        border-radius: 50%;
+        aspect-ratio: 1 / 1;
+        padding: 0;
+    }
 
-.key.equals {
-    grid-column: span 3;
-    background: var(--color-secondary);
-    color: white;
-}
+    .key.equals {
+        grid-column: span 3;
+        background: var(--color-secondary);
+        color: white;
+    }

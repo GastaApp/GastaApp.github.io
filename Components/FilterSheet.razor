@@ -1,0 +1,87 @@
+﻿@* Usage: <FilterSheet @bind-IsOpen="ShowFilter" Categories="Categories" PaymentMethods="PaymentMethods"
+                        SelectedCategoryId="FilterCategoryId" SelectedPaymentMethodId="FilterPaymentMethodId"
+                        OnApplied="((int? catId, int? pmId) f) => ..." /> *@
+@using GastaApp.Components
+
+<div class="sheet-scrim @(IsOpen ? "open" : "")" @onclick="Close"></div>
+<div class="sheet-panel @(IsOpen ? "open" : "")" @onclick:stopPropagation="true">
+    <div class="sheet-header">
+        <span class="sheet-title">Filter Expenses</span>
+        <button class="close-btn" @onclick="Close">&#10005;</button>
+    </div>
+    <div class="sheet-body">
+        <label class="field-label">Category</label>
+        <div class="filter-chip-wrap">
+            <div class="filter-chip @(_categoryId is null ? "selected" : "")" @onclick="() => _categoryId = null">All categories</div>
+            @foreach (var c in Categories)
+            {
+                <div class="filter-chip @(_categoryId == c.Id ? "selected" : "")" @onclick="() => _categoryId = c.Id">
+                    <CategoryIcon IconKey="@c.IconKey" LogoImage="@c.LogoImage" Color="@c.ColorKey" Size="14" />
+                    <span>@c.Name</span>
+                </div>
+            }
+        </div>
+         
+        <label class="field-label">Payment Method</label>
+        <div class="filter-chip-wrap">
+            <div class="filter-chip @(_paymentMethodId is null ? "selected" : "")" @onclick="() => _paymentMethodId = null">All payments</div>
+            @foreach (var m in PaymentMethods)
+            {
+                <div class="filter-chip @(_paymentMethodId == m.Id ? "selected" : "")" @onclick="() => _paymentMethodId = m.Id">
+                    <PaymentMethodIcon LogoImage="@m.LogoImage" Name="@m.Name" PreferIcon="true" ColorKey="@m.ColorKey" Size="16" />
+                    <span>@m.Name</span>
+                </div>
+            }
+        </div>
+
+        <div class="action-row">
+            <button class="cancel-button" @onclick="ClearAll">Clear</button>
+            <button class="save-button" @onclick="Apply">Apply</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public List<GastaApp.Models.Category> Categories { get; set; } = new();
+    [Parameter] public List<GastaApp.Models.PaymentMethod> PaymentMethods { get; set; } = new();
+    [Parameter] public int? SelectedCategoryId { get; set; }
+    [Parameter] public int? SelectedPaymentMethodId { get; set; }
+    [Parameter] public EventCallback<(int? CategoryId, int? PaymentMethodId)> OnApplied { get; set; }
+
+    private int? _categoryId;
+    private int? _paymentMethodId;
+    private bool _wasOpen;
+
+    protected override void OnParametersSet()
+    {
+        if (IsOpen && !_wasOpen)
+        {
+            // Re-seed local working picks from the page's actually-applied filter
+            // each time the sheet opens, so a re-open shows what's live, not
+            // whatever was tapped-but-never-Applied on a previous open.
+            _categoryId = SelectedCategoryId;
+            _paymentMethodId = SelectedPaymentMethodId;
+        }
+        _wasOpen = IsOpen;
+    }
+
+    private void ClearAll()
+    {
+        _categoryId = null;
+        _paymentMethodId = null;
+    }
+
+    private async Task Apply()
+    {
+        await OnApplied.InvokeAsync((_categoryId, _paymentMethodId));
+        await Close();
+    }
+
+    private async Task Close()
+    {
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+    }
+}

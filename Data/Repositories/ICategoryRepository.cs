@@ -7,6 +7,7 @@ public interface ICategoryRepository
     Task<List<Category>> GetActiveOrderedAsync();
     Task<Category?> GetByIdAsync(int id);
     Task<int> SaveAsync(Category category);
+    Task DeleteAsync(int id);
 }
 
 public class CategoryRepository : ICategoryRepository
@@ -28,4 +29,6 @@ public class CategoryRepository : ICategoryRepository
         category.Id = id; // put() now returns the real autoIncrement key when Id was 0
         return id;
     }
+
+    public Task DeleteAsync(int id) => _db.DeleteAsync(Store, id);
 }

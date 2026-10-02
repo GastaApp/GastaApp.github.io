@@ -4,38 +4,41 @@
 
 <div class="keypad-scrim @(IsOpen ? "open" : "")" @onclick="OnScrimTapped"></div>
 <div class="keypad-sheet @(IsOpen ? "open" : "")" @onclick:stopPropagation="true">
-    <div class="keypad-history">@_historyDisplay</div>
-    <div class="keypad-display">
-        @if (!string.IsNullOrEmpty(PendingOperatorSymbol))
-        {
-            <span class="pending-op">@PendingOperatorSymbol</span>
-        }
-        <span class="value">@_display</span>
-    </div>
+    <div class="sheet-notch"></div>
+    <div class="keypad-sheet-body">
+        <div class="keypad-history">@_historyDisplay</div>
+        <div class="keypad-display">
+            @if (!string.IsNullOrEmpty(PendingOperatorSymbol))
+            {
+                <span class="pending-op">@PendingOperatorSymbol</span>
+            }
+            <span class="value">@_display</span>
+        </div>
 
-    <div class="keypad-grid">
-        <button class="key digit" @onclick='() => PressDigit("7")'>7</button>
-        <button class="key digit" @onclick='() => PressDigit("8")'>8</button>
-        <button class="key digit" @onclick='() => PressDigit("9")'>9</button>
-        <button class="key op" @onclick="() => PressOperator('÷')">÷</button>
+        <div class="keypad-grid">
+            <button class="key digit" @onclick='() => PressDigit("7")'>7</button>
+            <button class="key digit" @onclick='() => PressDigit("8")'>8</button>
+            <button class="key digit" @onclick='() => PressDigit("9")'>9</button>
+            <button class="key op" @onclick="() => PressOperator('÷')">÷</button>
 
-        <button class="key digit" @onclick='() => PressDigit("4")'>4</button>
-        <button class="key digit" @onclick='() => PressDigit("5")'>5</button>
-        <button class="key digit" @onclick='() => PressDigit("6")'>6</button>
-        <button class="key op" @onclick="() => PressOperator('×')">×</button>
+            <button class="key digit" @onclick='() => PressDigit("4")'>4</button>
+            <button class="key digit" @onclick='() => PressDigit("5")'>5</button>
+            <button class="key digit" @onclick='() => PressDigit("6")'>6</button>
+            <button class="key op" @onclick="() => PressOperator('×')">×</button>
 
-        <button class="key digit" @onclick='() => PressDigit("1")'>1</button>
-        <button class="key digit" @onclick='() => PressDigit("2")'>2</button>
-        <button class="key digit" @onclick='() => PressDigit("3")'>3</button>
-        <button class="key op" @onclick="() => PressOperator('-')">−</button>
+            <button class="key digit" @onclick='() => PressDigit("1")'>1</button>
+            <button class="key digit" @onclick='() => PressDigit("2")'>2</button>
+            <button class="key digit" @onclick='() => PressDigit("3")'>3</button>
+            <button class="key op" @onclick="() => PressOperator('-')">−</button>
 
-        <button class="key clear" @onclick="Clear">C</button>
-        <button class="key digit" @onclick='() => PressDigit("0")'>0</button>
-        <button class="key digit" @onclick="PressDecimal">.</button>
-        <button class="key op" @onclick="() => PressOperator('+')">+</button>
+            <button class="key clear" @onclick="Clear">C</button>
+            <button class="key digit" @onclick='() => PressDigit("0")'>0</button>
+            <button class="key digit" @onclick="PressDecimal">.</button>
+            <button class="key op" @onclick="() => PressOperator('+')">+</button>
 
-        <button class="key backspace" @onclick="Backspace">⌫</button>
-        <button class="key equals" @onclick="OnEqualsPressed">=</button>
+            <button class="key backspace" @onclick="Backspace">⌫</button>
+            <button class="key equals" @onclick="OnEqualsPressed">=</button>
+        </div>
     </div>
 </div>
 

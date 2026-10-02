@@ -4,17 +4,17 @@
   "id": "./",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#03173d",
+  "background_color": "#F7F6FC",
+  "theme_color": "#5B4FE8",
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "icon-512.png",
+      "src": "gastalogo.png",
       "type": "image/png",
       "sizes": "512x512"
     },
     {
-      "src": "icon-192.png",
+      "src": "gasta.png",
       "type": "image/png",
       "sizes": "192x192"
     }

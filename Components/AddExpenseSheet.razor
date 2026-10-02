@@ -1,89 +1,116 @@
-@* Usage from Home.razor (placed at page root, after other content, so it renders on top):
-   <AddExpenseSheet @bind-IsOpen="ShowAddExpense" Category="SelectedCategory" OnSaved="LoadAsync" />
-*@
-@using GastaApp.Helpers
+@* Usage from MainLayout.razor: <AddExpenseSheet IsOpen="..." IsOpenChanged="..." Category="..." OnSaved="..." />
+   Category = null opens with an internal category picker (global/floating-button entry).
+   Category = a SpendSummary skips the picker and shows the original fixed-category
+   banner (unchanged tile-tap entry). *@
+@using GastaApp.Components
 @inject GastaApp.Data.Repositories.IExpenseRepository ExpenseRepository
-@inject GastaApp.Data.Repositories.IPaymentMethodRepository PaymentMethodRepository
 @inject GastaApp.Data.Repositories.ICategoryRepository CategoryRepository
-@inject GastaApp.Services.ThemeService ThemeService
+@inject GastaApp.Data.Repositories.IPaymentMethodRepository PaymentMethodRepository
+@inject GastaApp.Services.ExpenseSummaryService SummaryService
+@inject IJSRuntime JS
 
 <div class="sheet-scrim @(IsOpen ? "open" : "")" @onclick="Cancel"></div>
 <div class="sheet-panel @(IsOpen ? "open" : "")" @onclick:stopPropagation="true">
 
-    @if (Category is not null)
-    {
-        <div class="sheet-banner" style="background:@Category.ColorKey;">
-            <span class="banner-title">ADD @Category.Name.ToUpper() EXPENSE</span>
+     
+        <div class="sheet-banner">
+            @if (Category is not null) 
+            {
+                <span class="banner-title">Add @Category.Name Expense</span>
+            }
+            else
+            { 
+             <span class="banner-title">Add Expense</span>
+            }
             <button class="close-btn" @onclick="Cancel">&#10005;</button>
+        </div> 
+
+    <div class="sheet-body">
+        <label class="field-label">Date</label>
+        <div class="date-field-wrap">
+            <div class="field-input tappable">
+                <span>@Date.ToString("MMMM d, yyyy")</span>
+                <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+                    <rect x="3" y="5" width="18" height="16" rx="2" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                    <line x1="8" y1="3" x2="8" y2="7" />
+                    <line x1="16" y1="3" x2="16" y2="7" />
+                </svg>
+            </div>
+            <input type="date" class="overlay-date-input"
+                   value="@Date.ToString("yyyy-MM-dd")" @onchange="OnDateChanged" />
         </div>
 
-        <div class="sheet-body">
-            <label class="field-label">Date</label>
-            <input class="field-input" type="date" value="@Date.ToString("yyyy-MM-dd")"
-                   @onchange="OnDateChanged" />
-
-            <label class="field-label">Expense</label>
-            <div class="field-input tappable" @onclick="() => OpenKeypad(KeypadTarget.Amount)">
-                @if (Amount <= 0)
+        @if (Category is null)
+        {
+            <label class="field-label">Category</label>
+            <div class="field-input tappable category-field" @onclick="() => ShowCategoryPicker = true">
+                @if (SelectedCategory is not null)
                 {
-                    <span class="placeholder-text">Tap to enter amount</span>
+                    <span class="field-left">
+                        <CategoryIcon IconKey="@SelectedCategory.IconKey" LogoImage="@SelectedCategory.LogoImage" Color="@SelectedCategory.ColorKey" Size="20" />
+                        <span>@SelectedCategory.Name</span>
+                    </span>
                 }
                 else
                 {
-                    <span>@Amount.ToString("₱#,##0.00")</span>
+                    <span class="placeholder-text">Select category</span>
                 }
                 <span class="chevron">&#10095;</span>
             </div>
+        }
 
-            <label class="field-label">Payment Method</label>
-            <div class="chip-wrap">
-                @foreach (var m in PaymentMethods)
-                {
-                    <div class="pm-chip @(SelectedPaymentMethodId == m.Id ? "selected" : "")"
-                         style="@(SelectedPaymentMethodId == m.Id ? $"border-color:{m.ColorKey}; box-shadow: var(--shadow-chip), 0 0 0 4px {m.ColorKey}33;" : "")"
-                         @onclick="() => SelectedPaymentMethodId = m.Id">
-                        <img src="images/payments/@(m.LogoImage).svg" />
-                        @if (SelectedPaymentMethodId == m.Id)
-                        {
-                            <span class="check-badge">&#10003;</span>
-                        }
-                    </div>
-                }
-            </div>
-
-            <label class="field-label">Set Budget (@Category.Name)</label>
-            <div class="field-input tappable" @onclick="() => OpenKeypad(KeypadTarget.Budget)">
-                @if (CategoryBudget <= 0)
-                {
-                    <span class="placeholder-text">Tap to enter budget</span>
-                }
-                else
-                {
-                    <span>@CategoryBudget.ToString("₱#,##0.00")</span>
-                }
-                <span class="chevron">&#10095;</span>
-            </div>
-
-            <label class="field-label">Notes</label>
-            <textarea class="field-input notes" @bind="Notes" placeholder="Add a note"></textarea>
-
-            <div class="action-row">
-                <button class="cancel-button"
-                        style="background:@ColorHelper.AdaptiveTrack(Category.ColorKey, ThemeService.IsDark, lightAmount: 0.8, darkAmount: 0.6); color:@Category.ColorKey; border-color:@Category.ColorKey;"
-                        @onclick="Cancel">
-                    Cancel
-                </button>
-                <button class="save-button" style="background:@Category.ColorKey;" disabled="@(!CanSave)" @onclick="Save">
-                    Add Expense
-                </button>
-            </div>
+        <label class="field-label">Expense</label>
+        <div class="field-input tappable" @onclick="() => ShowKeypad = true">
+            @if (Amount <= 0)
+            {
+                <span class="placeholder-text">Tap to enter amount</span>
+            }
+            else
+            {
+                <span>@Amount.ToString("₱#,##0.00")</span>
+            }
+            <span class="chevron">&#10095;</span>
         </div>
-    }
+
+        <label class="field-label">Payment Method</label>
+        <div class="chip-wrap">
+            @foreach (var m in PaymentMethods)
+            {
+                <div class="pm-chip @(SelectedPaymentMethodId == m.Id ? "selected" : "")" @onclick="() => SelectedPaymentMethodId = m.Id">
+                    <PaymentMethodIcon LogoImage="@m.LogoImage" Name="@m.Name" PreferIcon="true" ColorKey="@m.ColorKey" Size="18" />
+                    <span>@m.Name</span>
+                </div>
+            }
+        </div>
+
+        @if (SelectedCategory is not null)
+        {
+            <div class="remaining-row">
+                <span class="remaining-label">Remaining Budget (@SelectedCategory.Name)</span>
+                <span class="remaining-amount @(RemainingBudget < 0 ? "danger-text" : "")">
+                    @RemainingBudget.ToString("₱#,##0.00")
+                </span>
+            </div>
+        }
+
+        <label class="field-label">Notes</label>
+        <textarea class="field-input notes" @bind="Notes" placeholder="Add a note"></textarea>
+
+        <div class="action-row">
+            <button class="cancel-button" @onclick="Cancel">Cancel</button>
+            <button class="save-button" disabled="@(!CanSave)" @onclick="Save">Add Expense</button>
+        </div>
+    </div>
 </div>
 
-<NumericKeypad @bind-IsOpen="ShowKeypad"
-                InitialValue="@(_keypadTarget == KeypadTarget.Amount ? Amount : CategoryBudget)"
-                OnConfirmed="OnKeypadConfirmed" />
+<NumericKeypad @bind-IsOpen="ShowKeypad" InitialValue="Amount" OnConfirmed="v => Amount = v" />
+
+@if (Category is null)
+{
+    <CategoryPicker @bind-IsOpen="ShowCategoryPicker" Categories="Categories"
+                    SelectedCategoryId="SelectedCategoryId" OnSelected="OnCategoryPicked" OnCategoryAdded="OnCategoryAdded" />
+}
 
 @code {
     [Parameter] public bool IsOpen { get; set; }
@@ -93,43 +120,56 @@
 
     private bool _wasOpen;
     private bool ShowKeypad;
+    private bool ShowCategoryPicker;
     private DateTime Date = DateTime.Now;
     private decimal Amount;
-    private decimal CategoryBudget;
+    private int? SelectedCategoryId;
     private int? SelectedPaymentMethodId;
     private string Notes = "";
+
+    private List<GastaApp.Models.Category> Categories = new();
     private List<GastaApp.Models.PaymentMethod> PaymentMethods = new();
+    private List<GastaApp.Services.SpendSummary> CategorySummaries = new();
 
-    private enum KeypadTarget { Amount, Budget }
-    private KeypadTarget _keypadTarget = KeypadTarget.Amount;
+    // Fast path: the preset Category param IS the source of truth. Global/quick-add
+    // path: looked up from CategorySummaries once the user picks one, so both paths
+    // end up giving this the same shape of object either way.
+    private GastaApp.Services.SpendSummary? SelectedCategory =>
+        Category ?? CategorySummaries.FirstOrDefault(c => c.Id == SelectedCategoryId);
 
-    private bool CanSave => Amount > 0 && SelectedPaymentMethodId.HasValue && Category is not null;
+    private bool CanSave => Amount > 0 && SelectedPaymentMethodId.HasValue && SelectedCategory is not null;
+
+    private decimal RemainingBudget => (SelectedCategory?.Budget ?? 0) - (SelectedCategory?.Spent ?? 0);
 
     protected override async Task OnParametersSetAsync()
     {
         if (IsOpen && !_wasOpen)
         {
-            // Fresh entry every time the sheet opens, same as MAUI's per-open ViewModel.
             Date = DateTime.Now;
             Amount = 0;
-            CategoryBudget = Category?.Budget ?? 0;
             SelectedPaymentMethodId = null;
+            SelectedCategoryId = Category?.Id;
             Notes = "";
             ShowKeypad = false;
+            ShowCategoryPicker = false;
 
             if (PaymentMethods.Count == 0)
-            {
                 PaymentMethods = await PaymentMethodRepository.GetActiveOrderedAsync();
+
+            if (Category is null)
+            {
+                // Only needed for the picker/remaining-budget lookup path — the
+                // tile-tap fast path already has everything it needs via Category.
+                if (Categories.Count == 0)
+                    Categories = await CategoryRepository.GetActiveOrderedAsync();
+
+                CategorySummaries = await SummaryService.GetCategorySummariesAsync(Date.Year, Date.Month);
             }
         }
         _wasOpen = IsOpen;
     }
 
-    private void OpenKeypad(KeypadTarget target)
-    {
-        _keypadTarget = target;
-        ShowKeypad = true;
-    }
+    private void OnCategoryPicked(int id) => SelectedCategoryId = id;
 
     private void OnDateChanged(ChangeEventArgs e)
     {
@@ -137,37 +177,29 @@
             Date = d;
     }
 
-    private void OnKeypadConfirmed(decimal value)
+    private async Task OnCategoryAdded(GastaApp.Models.Category cat)
     {
-        if (_keypadTarget == KeypadTarget.Amount)
-            Amount = value;
-        else
-            CategoryBudget = value;
+        Categories.Add(cat);
+        // Re-fetch rather than hand-construct a SpendSummary — a brand-new category has
+        // no CategoryBudget row yet (defaults to 0, no fallback, per the app's existing
+        // budget rules), and re-fetching guarantees this stays correct rather than
+        // duplicating that logic here.
+        CategorySummaries = await SummaryService.GetCategorySummariesAsync(Date.Year, Date.Month);
     }
 
     private async Task Save()
     {
-        if (!CanSave || Category is null) return;
+        if (!CanSave || SelectedCategory is null) return;
 
         var expense = new GastaApp.Models.Expense
         {
             Date = Date,
             Amount = Amount,
-            CategoryId = Category.Id,
+            CategoryId = SelectedCategory.Id,
             PaymentMethodId = SelectedPaymentMethodId!.Value,
             Notes = string.IsNullOrWhiteSpace(Notes) ? null : Notes
         };
         await ExpenseRepository.SaveAsync(expense);
-
-        if (CategoryBudget != Category.Budget)
-        {
-            var categoryModel = await CategoryRepository.GetByIdAsync(Category.Id);
-            if (categoryModel is not null)
-            {
-                categoryModel.MonthlyBudget = CategoryBudget;
-                await CategoryRepository.SaveAsync(categoryModel);
-            }
-        }
 
         await OnSaved.InvokeAsync();
         await Close();

@@ -6,32 +6,33 @@
    CSS custom properties — never hardcode a hex value in a
    component's .razor.css. That's what makes a full repaint like
    this safe: change the values here, everything cascades.
+
+   Light mode: unchanged, purple-tinted neutrals as originally designed.
+   AccentColorService only overrides --color-primary/--color-primary-dark/
+   --nav-active-bg here — backgrounds stay fixed regardless of accent.
+
+   Dark mode: neutrals are a shared, ACCENT-INDEPENDENT charcoal base —
+   modern dark UIs (Claude, GitHub, Linear) use one neutral dark palette
+   regardless of accent rather than tinting backgrounds per-color. Only
+   --color-primary/--color-primary-dark/--nav-active-bg still shift per
+   preset in dark mode (via AccentColorService), same mechanism as light.
    ============================================================ */
 
 :root {
-    /* --- Palette: Indigo/violet primary, dusty rose secondary.
-       Deliberately avoids blue/green/orange — those already belong to the
-       GCash/Maya/ShopeePay logos rendered throughout the app, so the brand's
-       own accent needed to sit somewhere those logos don't compete with it. --- */
-    --color-primary: #5B4FE8; /* hero accent — buttons, active states, amounts */
-    --color-primary-dark: #4A3FC4; /* pressed/hover, gradients */
-    --color-secondary: #FF6F91; /* dusty rose — secondary accent, avatar bg */
-    --success: #2FAE73; /* money-positive, remaining budget */
-    --danger: #E5484D; /* delete actions, reset, negative states */
-    /* --- Surfaces --- */
-    --bg: #F7F6FC; /* app canvas — cool lavender-white */
-    --surface: #FFFFFF; /* cards, sheets */
-    --surface-alt: #EFEDFA; /* recessed fields, progress tracks, chip backgrounds */
+    --color-primary: #5B4FE8;
+    --color-primary-dark: #4A3FC4;
+    --color-secondary: #FF6F91;
+    --success: #2FAE73;
+    --danger: #E5484D;
+    --bg: #F7F6FC;
+    --surface: #FFFFFF;
+    --surface-alt: #EFEDFA;
     --border: #E3E0F5;
-    /* --- Text --- */
     --text-primary: #211D3A;
     --text-secondary: #7A76A0;
-    /* --- Fixed regardless of theme (brand logos need a light backdrop) --- */
     --LogoChipBackground: #FFFFFF;
-    /* --- Type --- */
     --font-display: 'Fredoka', system-ui, sans-serif;
     --font-body: 'Inter', system-ui, sans-serif;
-    /* --- Shape / elevation --- */
     --radius-lg: 20px;
     --radius-md: 14px;
     --shadow-soft: 0 4px 16px rgba(33, 29, 58, 0.08);
@@ -42,27 +43,27 @@
 }
 
 [data-theme="dark"] {
+    /* Accent-driven — pre-JS default (purple); AccentColorService overrides
+       these three per the chosen preset once it runs. */
     --color-primary: #7C6FFF;
     --color-primary-dark: #6355E0;
+    --nav-active-bg: #453E7A;
+    /* Fixed, shared neutral dark base — NOT accent-tinted. Soft true-neutral
+       charcoal so it pairs cleanly with any of the 7 accent hues. */
+    --bg: #191919;
+    --surface: #232323;
+    --surface-alt: #2B2B2B;
+    --border: #3A3A3A;
+    --text-primary: #F2F2F2;
+    --text-secondary: #A3A3A3;
+    --nav-bg: #232323;
     --color-secondary: #FF89A8;
     --success: #4CC793;
     --danger: #F0656A;
-    --bg: #17152A; /* deep indigo-black, not neutral gray */
-    --surface: #211E38;
-    --surface-alt: #2A2748;
-    --border: #38345C;
-    --text-primary: #F1EFFB;
-    --text-secondary: #ABA6D1;
-
-    /* Softened for dark mode — still very light so logos stay legible, but pure
-       white read as harsh/glaring against the dark surface. Light mode keeps
-       pure white since that's not an issue against light surfaces there. */
     --LogoChipBackground: #E8E4F5;
     --shadow-soft: 0 4px 18px rgba(0, 0, 0, 0.45);
     --shadow-card: 0 10px 28px rgba(0, 0, 0, 0.5);
     --shadow-chip: 0 3px 3px rgba(0, 0, 0, 0.5);
-    --nav-bg: #2A2748;
-    --nav-active-bg: #453E7A;
 }
 
 * {
@@ -79,9 +80,6 @@ html, body {
     transition: background 0.2s ease, color 0.2s ease;
 }
 
-/* Amounts and headings get the rounded display face — most amount displays
-   across the app are already wrapped in <strong>, so this applies broadly
-   without needing to touch every component file. */
 strong {
     font-family: var(--font-display);
     font-weight: 500;

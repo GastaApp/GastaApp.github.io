@@ -1,82 +1,265 @@
 @page "/settings"
+@using Microsoft.AspNetCore.Components.Forms
+@implements IAsyncDisposable
 @inject GastaApp.Services.ThemeService ThemeService
 @inject GastaApp.Data.IndexedDbService IndexedDbService
 @inject GastaApp.Services.SeedService SeedService
+@inject GastaApp.Services.UserProfileService UserProfile
+@inject GastaApp.Services.AccentColorService AccentColor
 @inject GastaApp.Services.AlertService Alert
+@inject GastaApp.Data.Repositories.IExpenseRepository ExpenseRepository
+@inject GastaApp.Data.Repositories.ICategoryRepository CategoryRepository
+@inject GastaApp.Data.Repositories.IPaymentMethodRepository PaymentMethodRepository
+@inject GastaApp.Data.Repositories.IBudgetRepository BudgetRepository
+@inject GastaApp.Data.Repositories.ICategoryBudgetRepository CategoryBudgetRepository
+@inject NavigationManager Nav
+@inject IJSRuntime JS
 
-<PageTitle>Gasta - Settings</PageTitle>
+<PageTitle>GastaApp - Settings</PageTitle>
 
-<div class="header">
-    <span class="screen-title">SETTINGS</span>
+<div class="header-sentinel" @ref="_sentinelRef"></div>
+<div class="settings-header-sticky" @ref="_headerRef">
+    <div class="header-content">
+        <div class="header-content-left">
+            <span class="header-title">Settings</span>
+            <span class="intro-text">
+                Settings muna bago gastos. Para kahit papaano, may plano ang kagastusan mo.
+            </span>
+        </div>
+        <img src="images/mascot-settings.gif" />
+    </div>
+</div>
+
+<div class="section">
+    <span class="section-label">Profile</span>
+    <div class="list-card">
+        <div class="list-row no-hover">
+            <div class="icon-badge">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6" />
+                </svg>
+            </div>
+            <input class="nickname-input" @bind="Nickname" @bind:event="oninput" placeholder="Your name" maxlength="20" />
+            <button class="save-nickname-btn" hidden="@(!NicknameChanged)" @onclick="SaveNickname">Save</button>
+        </div>
+    </div>
+    @if (NicknameSaved)
+    {
+        <div class="inline-note success-note">Saved!</div>
+    }
 </div>
 
 <div class="section">
     <span class="section-label">Appearance</span>
-    <div class="segmented">
-        <button class="segment @(CurrentTheme == "Light" ? "active" : "")" @onclick='() => SetTheme("Light")'>
-            ☀️ Light
-        </button>
-        <button class="segment @(CurrentTheme == "Dark" ? "active" : "")" @onclick='() => SetTheme("Dark")'>
-            🌙 Dark
-        </button>
+    <div class="list-card">
+        <div class="appearance-block">
+            <div class="segmented">
+                <button class="segment @(CurrentTheme == "Light" ? "active" : "")" @onclick='() => SetTheme("Light")'>
+                    ☀️ Light
+                </button>
+                <button class="segment @(CurrentTheme == "Dark" ? "active" : "")" @onclick='() => SetTheme("Dark")'>
+                    🌙 Dark
+                </button>
+            </div>
+        </div>
+
+        <div class="list-row" @onclick="() => ShowAccentSheet = true">
+            <div class="icon-badge accent-preview-badge" style="background:@CurrentAccentHex;"></div>
+            <div class="list-row-text">
+                <span class="list-row-label">Accent Color</span>
+                <span class="list-row-sublabel">@CurrentAccentName</span>
+            </div>
+            <span class="chevron">&#10095;</span>
+        </div>
     </div>
 </div>
+
+<AccentColorSheet IsOpen="ShowAccentSheet" IsOpenChanged="OnAccentSheetOpenChanged" />
 
 <div class="section">
     <span class="section-label">Manage</span>
     <div class="list-card">
-        <div class="list-row" @onclick='() => ShowComingSoon("Manage Payment Methods")'>
-            <span>Manage Payment Methods</span>
+        <div class="list-row" @onclick='() => Nav.NavigateTo("managepaymentmethods")'>
+            <div class="icon-badge">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                    <path d="M3 7a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+                    <path d="M16 12h3v3h-3a1.5 1.5 0 0 1 0-3Z" />
+                </svg>
+            </div>
+            <span class="list-row-label">Manage Payment Methods</span>
             <span class="chevron">&#10095;</span>
         </div>
-        <div class="list-row" @onclick='() => ShowComingSoon("Manage Categories")'>
-            <span>Manage Categories</span>
+        <div class="list-row" @onclick='() => Nav.NavigateTo("managecategories")'>
+            <div class="icon-badge">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                    <path d="M20.6 12.1 12 3.5H4v8l8.6 8.6a2 2 0 0 0 2.8 0l5.2-5.2a2 2 0 0 0 0-2.8Z" />
+                    <circle cx="8" cy="8" r="1.2" />
+                </svg>
+            </div>
+            <span class="list-row-label">Manage Categories</span>
             <span class="chevron">&#10095;</span>
         </div>
     </div>
 </div>
 
 <div class="section">
-    <span class="section-label">Notifications</span>
-    <div class="list-card">
-        <div class="list-row toggle-row">
-            <span>Budget Reminders</span>
-            <label class="switch">
-                <input type="checkbox" @bind="BudgetReminders" @bind:after="OnReminderToggled" />
-                <span class="slider"></span>
-            </label>
+    <span class="section-label">Data & Backup</span>
+    <div class="backup-card">
+        <div class="backup-header" @onclick="() => ShowBackup = !ShowBackup">
+            <div class="icon-badge">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                    <ellipse cx="12" cy="5" rx="8" ry="3" />
+                    <path d="M4 5v14c0 1.66 3.58 3 8 3s8-1.34 8-3V5" />
+                    <path d="M4 12c0 1.66 3.58 3 8 3s8-1.34 8-3" />
+                </svg>
+            </div>
+            <div class="backup-header-text">
+                <span class="backup-title">Export & Import</span>
+                <span class="backup-subtitle">JSON, CSV, Restore</span>
+            </div>
+            <span class="chevron @(ShowBackup ? "chevron-open" : "")">&#10095;</span>
         </div>
-    </div>
-    <div class="inline-note">Reminder preference is saved, but no notifications are sent yet.</div>
-</div>
 
-<div class="section">
-    <span class="section-label">Data</span>
-    <button class="danger-button" @onclick="DoReset">Reset All Data</button>
+        @if (ShowBackup)
+        {
+            <div class="backup-body">
+                <button class="backup-btn backup-btn-primary" disabled="@IsBusy" @onclick="ExportJson">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    Export as JSON
+                </button>
+                <button class="backup-btn backup-btn-outline" disabled="@IsBusy" @onclick="ExportCsv">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+                        <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                    Export as CSV
+                </button>
+
+                <div class="backup-note">
+                    JSON exports categories, payment methods, transactions, and your full
+                    monthly/category budget history — enough to fully restore your data.
+                    CSV exports transactions only.
+                </div>
+
+                <span class="backup-section-label">Import Backup File</span>
+
+                <div class="file-row-wrap">
+                    <div class="file-row">
+                        <div class="icon-badge">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2Z" />
+                            </svg>
+                        </div>
+                        <div class="file-row-text">
+                            <span class="file-row-title">@(SelectedFileName ?? "Choose backup file")</span>
+                            <span class="file-row-subtitle">Supports .json full backups and .csv transaction files</span>
+                        </div>
+                        <span class="chevron">&#10095;</span>
+                    </div>
+                    <InputFile class="file-input-overlay" OnChange="OnFileSelected" accept=".json,.csv" />
+                </div>
+
+                @if (SelectedFileName is not null)
+                {
+                    <div class="backup-note backup-note-warning">
+                        JSON restore <strong>replaces all current data</strong>, including budgets.
+                        CSV import <strong>merges</strong> transactions into what you already have
+                        and skips duplicates. Review your file before continuing.
+                    </div>
+
+                    <button class="backup-btn backup-btn-outline" disabled="@IsBusy" @onclick="RunImport">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                            <path d="M21 9v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9" />
+                            <polyline points="17 8 12 3 7 8" />
+                            <line x1="12" y1="3" x2="12" y2="15" />
+                        </svg>
+                        @(IsBusy ? "Working..." : "Restore Backup")
+                    </button>
+                }
+            </div>
+        }
+    </div>
+
+    <button class="danger-button" style="margin-top:14px;" @onclick="DoReset">Reset All Data</button>
     @if (ResetDone)
     {
         <div class="inline-note success-note">Data reset. Reloading...</div>
     }
 </div>
 
+<div class="section">
+    <span class="section-label">About</span>
+    <div class="list-card">
+        <div class="list-row no-hover">
+            <div class="icon-badge">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                </svg>
+            </div>
+            <span class="list-row-label">App Version</span>
+            <span class="about-value">@AppVersion</span>
+        </div>
+    </div>
+</div>
+
 <div class="about-footer">
-    GASTA v1.0.0 (Blazor)
+    Made with 💜 for Pinoy budgeting
 </div>
 
 @code {
-    private const string RemindersKey = "gasta-budget-reminders";
+    private const string AppVersion = "1.0.0";
+
+    private ElementReference _headerRef;
+    private ElementReference _sentinelRef;
 
     private string CurrentTheme = "Light";
-    private bool BudgetReminders;
     private bool ResetDone;
+    private bool IsBusy;
+    private bool ShowBackup;
+    private bool ShowAccentSheet;
+    private string SelectedAccentId = "purple";
 
-    [Inject] private IJSRuntime JS { get; set; } = default!;
+    private GastaApp.Services.AccentPreset CurrentAccentPreset =>
+        GastaApp.Services.AccentColorService.Presets.FirstOrDefault(p => p.Id == SelectedAccentId)
+        ?? GastaApp.Services.AccentColorService.Presets[0];
+
+    private string CurrentAccentHex => CurrentAccentPreset.SwatchHex;
+    private string CurrentAccentName => CurrentAccentPreset.Name;
+
+    private string Nickname = "";
+    private string _originalNickname = "";
+    private bool NicknameSaved;
+    private bool NicknameChanged =>
+        !string.IsNullOrWhiteSpace(Nickname) && Nickname.Trim() != _originalNickname;
+
+    private IBrowserFile? SelectedFile;
+    private string? SelectedFileName;
 
     protected override async Task OnInitializedAsync()
     {
         CurrentTheme = await ThemeService.GetCurrentAsync();
-        var saved = await JS.InvokeAsync<string?>("localStorage.getItem", RemindersKey);
-        BudgetReminders = saved == "true";
+        Nickname = _originalNickname = await UserProfile.GetNicknameAsync();
+        SelectedAccentId = await AccentColor.GetCurrentPresetIdAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("gastaSettingsHeader.init", _headerRef, _sentinelRef);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try { await JS.InvokeVoidAsync("gastaSettingsHeader.dispose", _headerRef); }
+        catch { /* page already torn down — nothing to clean up */ }
     }
 
     private async Task SetTheme(string option)
@@ -85,20 +268,319 @@
         await ThemeService.ApplyAsync(option);
     }
 
-    private async Task OnReminderToggled()
+    private async Task OnAccentSheetOpenChanged(bool open)
     {
-        await JS.InvokeVoidAsync("localStorage.setItem", RemindersKey, BudgetReminders ? "true" : "false");
+        ShowAccentSheet = open;
+        if (!open)
+        {
+            // Sheet applies changes instantly to the live document via the service,
+            // but this page's own cached SelectedAccentId needs a manual refresh so
+            // the collapsed row's preview swatch/name reflect whatever was chosen.
+            SelectedAccentId = await AccentColor.GetCurrentPresetIdAsync();
+        }
     }
 
-    private async Task ShowComingSoon(string feature)
+    private async Task SaveNickname()
     {
-        await Alert.ShowAsync($"{feature} is coming soon.", "Coming Soon");
+        var trimmed = Nickname.Trim();
+        await UserProfile.SetNicknameAsync(trimmed);
+        _originalNickname = trimmed;
+        NicknameSaved = true;
+        StateHasChanged();
+        await Task.Delay(1500);
+        NicknameSaved = false;
+        StateHasChanged();
+    }
+
+    // --- Export -------------------------------------------------------------
+
+    private record BackupCategory(int Id, string Name, string LogoImage, string? IconKey, string ColorKey, int SortOrder);
+    private record BackupPaymentMethod(int Id, string Name, string LogoImage, string ColorKey, int SortOrder);
+    private record BackupExpense(int Id, DateTime Date, decimal Amount, int CategoryId, int PaymentMethodId, string? Notes);
+    private record BackupBudget(int Year, int Month, decimal Amount);
+    private record BackupCategoryBudget(int CategoryId, int Year, int Month, decimal Amount);
+    private record BackupFile(
+        int Version, DateTime ExportedAt,
+        List<BackupCategory> Categories, List<BackupPaymentMethod> PaymentMethods, List<BackupExpense> Expenses,
+        List<BackupBudget> Budgets, List<BackupCategoryBudget> CategoryBudgets);
+
+    private async Task ExportJson()
+    {
+        IsBusy = true;
+        try
+        {
+            var categories = await CategoryRepository.GetActiveOrderedAsync();
+            var methods = await PaymentMethodRepository.GetActiveOrderedAsync();
+            var expenses = await ExpenseRepository.GetAllAsync();
+            var budgets = await BudgetRepository.GetAllAsync();
+            var categoryBudgets = await CategoryBudgetRepository.GetAllAsync();
+
+            var backup = new BackupFile(
+                2, DateTime.UtcNow,
+                categories.Select(c => new BackupCategory(c.Id, c.Name, c.LogoImage, c.IconKey, c.ColorKey, c.SortOrder)).ToList(),
+                methods.Select(m => new BackupPaymentMethod(m.Id, m.Name, m.LogoImage, m.ColorKey, m.SortOrder)).ToList(),
+                expenses.Select(e => new BackupExpense(e.Id, e.Date, e.Amount, e.CategoryId, e.PaymentMethodId, e.Notes)).ToList(),
+                budgets.Select(b => new BackupBudget(b.Year, b.Month, b.Amount)).ToList(),
+                categoryBudgets.Select(cb => new BackupCategoryBudget(cb.CategoryId, cb.Year, cb.Month, cb.Amount)).ToList());
+
+            var json = System.Text.Json.JsonSerializer.Serialize(backup,
+                new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+
+            await JS.InvokeVoidAsync("gastaExport.downloadFile",
+                $"gasta-backup-{DateTime.Now:yyyy-MM-dd}.json", "application/json;charset=utf-8", json);
+        }
+        finally { IsBusy = false; }
+    }
+
+    private async Task ExportCsv()
+    {
+        IsBusy = true;
+        try
+        {
+            var expenses = await ExpenseRepository.GetAllAsync();
+            var categories = await CategoryRepository.GetActiveOrderedAsync();
+            var methods = await PaymentMethodRepository.GetActiveOrderedAsync();
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("Date,Category,Payment Method,Amount,Notes");
+            foreach (var e in expenses.OrderByDescending(e => e.Date))
+            {
+                var cat = categories.FirstOrDefault(c => c.Id == e.CategoryId)?.Name ?? "Uncategorized";
+                var pm = methods.FirstOrDefault(m => m.Id == e.PaymentMethodId)?.Name ?? "Unknown";
+                sb.AppendLine(string.Join(",",
+                    CsvField(e.Date.ToString("yyyy-MM-dd")), CsvField(cat), CsvField(pm),
+                    e.Amount.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    CsvField(e.Notes ?? "")));
+            }
+
+            await JS.InvokeVoidAsync("gastaExport.downloadFile",
+                $"gasta-export-{DateTime.Now:yyyy-MM-dd}.csv", "text/csv;charset=utf-8", sb.ToString());
+        }
+        finally { IsBusy = false; }
+    }
+
+    private static string CsvField(string value)
+    {
+        if (value.Contains(',') || value.Contains('"') || value.Contains('\n'))
+            return "\"" + value.Replace("\"", "\"\"") + "\"";
+        return value;
+    }
+
+    // --- Import ---------------------------------------------------------------
+
+    private class GastaAppImportException : Exception
+    {
+        public GastaAppImportException(string message) : base(message) { }
+    }
+
+    private void OnFileSelected(InputFileChangeEventArgs e)
+    {
+        SelectedFile = e.File;
+        SelectedFileName = e.File.Name;
+    }
+
+    private async Task RunImport()
+    {
+        if (SelectedFile is null) return;
+
+        var isJson = SelectedFile.Name.EndsWith(".json", StringComparison.OrdinalIgnoreCase);
+        var confirmMessage = isJson
+            ? "This will ERASE all current data (including budgets) and replace it with the backup file. Continue?"
+            : "This will merge transactions from the CSV into your current data. Continue?";
+
+        var confirmed = await Alert.ShowConfirmAsync(confirmMessage, isJson ? "Restore Backup" : "Import CSV",
+            confirmText: isJson ? "Replace" : "Import", cancelText: "Cancel");
+        if (!confirmed) return;
+
+        IsBusy = true;
+        try
+        {
+            using var stream = SelectedFile.OpenReadStream(maxAllowedSize: 20 * 1024 * 1024);
+            using var reader = new StreamReader(stream);
+            var content = await reader.ReadToEndAsync();
+
+            if (isJson)
+                await RestoreFromJson(content);
+            else
+                await MergeFromCsv(content);
+        }
+        catch (GastaAppImportException ex)
+        {
+            await Alert.ShowAsync(ex.Message, "Couldn't Import File");
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Import failed: {ex}");
+            await Alert.ShowAsync(
+                "Something went wrong reading that file. Make sure it's a GastaApp backup or export, then try again.",
+                "Couldn't Import File");
+        }
+        finally
+        {
+            IsBusy = false;
+            SelectedFile = null;
+            SelectedFileName = null;
+        }
+    }
+
+    private async Task RestoreFromJson(string json)
+    {
+        BackupFile? backup;
+        try
+        {
+            backup = System.Text.Json.JsonSerializer.Deserialize<BackupFile>(json);
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            throw new GastaAppImportException(
+                "This file doesn't look like a valid backup — it may be corrupted or not a JSON file at all.");
+        }
+
+        var looksLikeGastaAppBackup =
+            backup is not null &&
+            backup.Version > 0 &&
+            backup.Categories is not null &&
+            backup.PaymentMethods is not null &&
+            backup.Expenses is not null;
+
+        if (!looksLikeGastaAppBackup)
+        {
+            throw new GastaAppImportException(
+                "This doesn't look like a GastaApp backup file. Please choose a JSON file that was exported from GastaApp's Export & Import.");
+        }
+
+        await IndexedDbService.ClearAllAsync();
+
+        foreach (var c in backup!.Categories)
+        {
+            await CategoryRepository.SaveAsync(new GastaApp.Models.Category
+            {
+                Id = c.Id,
+                Name = c.Name,
+                LogoImage = c.LogoImage,
+                IconKey = c.IconKey,
+                ColorKey = c.ColorKey,
+                SortOrder = c.SortOrder
+            });
+        }
+        foreach (var m in backup.PaymentMethods)
+        {
+            await PaymentMethodRepository.SaveAsync(new GastaApp.Models.PaymentMethod
+            {
+                Id = m.Id,
+                Name = m.Name,
+                LogoImage = m.LogoImage,
+                ColorKey = m.ColorKey,
+                SortOrder = m.SortOrder
+            });
+        }
+        foreach (var e in backup.Expenses)
+        {
+            await ExpenseRepository.SaveAsync(new GastaApp.Models.Expense
+            {
+                Id = e.Id,
+                Date = e.Date,
+                Amount = e.Amount,
+                CategoryId = e.CategoryId,
+                PaymentMethodId = e.PaymentMethodId,
+                Notes = e.Notes
+            });
+        }
+
+        if (backup.Budgets is not null)
+        {
+            foreach (var b in backup.Budgets)
+                await BudgetRepository.SetForMonthAsync(b.Year, b.Month, b.Amount);
+        }
+        if (backup.CategoryBudgets is not null)
+        {
+            foreach (var cb in backup.CategoryBudgets)
+                await CategoryBudgetRepository.SetForCategoryMonthAsync(cb.CategoryId, cb.Year, cb.Month, cb.Amount);
+        }
+
+        await Alert.ShowAsync("Backup restored. Reloading...", "Done");
+        await Task.Delay(800);
+        await JS.InvokeVoidAsync("location.reload");
+    }
+
+    private async Task MergeFromCsv(string csv)
+    {
+        var categories = await CategoryRepository.GetActiveOrderedAsync();
+        var methods = await PaymentMethodRepository.GetActiveOrderedAsync();
+        var existing = await ExpenseRepository.GetAllAsync();
+
+        var lines = csv.Replace("\r\n", "\n").Split('\n').Where(l => l.Length > 0).ToList();
+        int imported = 0, skippedUnknown = 0, skippedDuplicate = 0;
+
+        for (var i = 1; i < lines.Count; i++)
+        {
+            var fields = ParseCsvLine(lines[i]);
+            if (fields.Count < 5) continue;
+
+            if (!DateTime.TryParse(fields[0], out var date)) continue;
+            var category = categories.FirstOrDefault(c => string.Equals(c.Name, fields[1], StringComparison.OrdinalIgnoreCase));
+            var method = methods.FirstOrDefault(m => string.Equals(m.Name, fields[2], StringComparison.OrdinalIgnoreCase));
+            if (category is null || method is null || !decimal.TryParse(fields[3], System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var amount))
+            {
+                skippedUnknown++;
+                continue;
+            }
+            var notes = fields.Count > 4 ? fields[4] : null;
+
+            var isDuplicate = existing.Any(e =>
+                e.Date.Date == date.Date && e.CategoryId == category.Id && e.PaymentMethodId == method.Id &&
+                e.Amount == amount && (e.Notes ?? "") == (notes ?? ""));
+            if (isDuplicate)
+            {
+                skippedDuplicate++;
+                continue;
+            }
+
+            await ExpenseRepository.SaveAsync(new GastaApp.Models.Expense
+            {
+                Date = date,
+                Amount = amount,
+                CategoryId = category.Id,
+                PaymentMethodId = method.Id,
+                Notes = notes
+            });
+            imported++;
+        }
+
+        await Alert.ShowAsync(
+            $"Imported {imported} transaction(s). Skipped {skippedDuplicate} duplicate(s) and {skippedUnknown} row(s) with an unrecognized category or payment method.",
+            "Import Complete");
+    }
+
+    private static List<string> ParseCsvLine(string line)
+    {
+        var fields = new List<string>();
+        var sb = new System.Text.StringBuilder();
+        var inQuotes = false;
+        for (var i = 0; i < line.Length; i++)
+        {
+            var c = line[i];
+            if (inQuotes)
+            {
+                if (c == '"' && i + 1 < line.Length && line[i + 1] == '"') { sb.Append('"'); i++; }
+                else if (c == '"') inQuotes = false;
+                else sb.Append(c);
+            }
+            else
+            {
+                if (c == '"') inQuotes = true;
+                else if (c == ',') { fields.Add(sb.ToString()); sb.Clear(); }
+                else sb.Append(c);
+            }
+        }
+        fields.Add(sb.ToString());
+        return fields;
     }
 
     private async Task DoReset()
     {
         var confirmed = await Alert.ShowConfirmAsync(
-            "This will erase everything and reseed demo data. Are you sure?",
+            "This will erase everything, including your name, and start fresh. Are you sure?",
             "Reset All Data",
             confirmText: "Reset",
             cancelText: "Cancel");
@@ -107,6 +589,10 @@
 
         await IndexedDbService.ClearAllAsync();
         await SeedService.SeedIfEmptyAsync();
+        await UserProfile.ClearProfileAsync();
+        await ThemeService.ApplyAsync("Light");
+        await AccentColor.ResetToDefaultAsync();
+
         ResetDone = true;
         StateHasChanged();
         await Task.Delay(1200);

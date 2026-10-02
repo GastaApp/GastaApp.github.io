@@ -1,0 +1,133 @@
+.top-fixed {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--bg);
+    margin: -20px -20px 0;
+    padding: 20px 20px 20px;
+}
+
+.header-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.icon-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: var(--surface-alt);
+    color: var(--text-primary);
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.header-content {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    min-width: 0;
+}
+
+    .header-content img {
+        height: 70px;
+        width: auto;
+        max-width: 96px;
+        object-fit: contain;
+        flex-shrink: 0;
+        transition: height 0.25s ease, opacity 0.2s ease;
+    }
+
+.header-content-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    flex: 1;
+}
+
+.header-title {
+    font-weight: 600;
+    font-size: 1.5rem;
+    font-family: var(--font-display);
+}
+
+.intro-text {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    line-height: 1.4;
+}
+
+/* Unified card with divider lines, same pattern as Home's category list — shadow on
+   the wrapper (unclipped), overflow:hidden on the inner list (clips row corners). */
+.category-list-wrap {
+    border-radius: 20px;
+    box-shadow: var(--shadow-card);
+    margin-top: 12px;
+}
+
+.category-list {
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.category-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+}
+
+    .category-row:last-child {
+        border-bottom: none;
+    }
+
+.cat-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: white; /* CategoryIcon's svg uses stroke=currentColor — this is what makes
+                     it render white against the colored circle background */
+}
+
+.cat-name {
+    flex: 1;
+    font-size: 13px;
+     font-family: var(--font-display);
+}
+
+.chevron {
+    color: var(--text-secondary);
+    font-size: 11px;
+}
+
+.add-button {
+    display: block;
+    width: 100%;
+    margin-top: 16px;
+    padding: 14px;
+    border: 1.5px solid var(--color-primary);
+    background: transparent;
+    color: var(--color-primary);
+    border-radius: 14px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: var(--font-display);
+}

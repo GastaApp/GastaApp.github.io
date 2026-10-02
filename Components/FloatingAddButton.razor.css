@@ -1,0 +1,20 @@
+﻿.fab {
+    position: fixed;
+    right: 18px;
+    /* ASSUMPTION: I don't have BottomNavBar's actual rendered height, so this is a
+       guess (70px nav + 16px gap). If it overlaps or floats too high/low once you
+       see it, tell me the real number and I'll correct this in one place. */
+    bottom: calc(70px + 16px);
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    border: none;
+    background: var(--color-primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+    cursor: pointer;
+    z-index: 19;
+}
