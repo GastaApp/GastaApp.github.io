@@ -1,5 +1,5 @@
 @page "/managebudget"
-@inject GastaApp.Services.ExpenseSummaryService SummaryService
+@inject Gasta.Services.ExpenseSummaryService SummaryService
 @inject NavigationManager Nav
 
 <div class="budget-page">
@@ -10,7 +10,7 @@
 
         <div class="header-content">
             <div class="header-content-left">
-                <span class="header-title">Monthly Budget</span> 
+                <span class="header-title">Monthly Budget</span>
                 <span class="intro-text">
                     Syempre dapat may budget ka hindi yung
                     si gastos ka lang ng gastos diba?
@@ -24,23 +24,16 @@
         </button>
 
         <label class="field-label">Monthly Budget</label>
-        <div class="field-input tappable" @onclick="() => OpenKeypad(null)">
+        <div class="field-input">
             <span>@MonthlyBudget.ToString("₱#,##0.00")</span>
-            <span class="chevron">&#10095;</span>
         </div>
+        <p class="intro-text" style="margin:6px 0 0;">Total of your category budgets below.</p>
     </div>
 
     <div class="budget-scroll">
         <div class="section">
             <span class="section-title">Category Budgets</span>
             <p class="intro-text">Set spending limits for specific categories.</p>
-
-            <div class="allocated-row">
-                <span class="allocated-label">Allocated</span>
-                <span class="allocated-amount @(AllocatedTotal > MonthlyBudget ? "over" : "")">
-                    @AllocatedTotal.ToString("₱#,##0") / @MonthlyBudget.ToString("₱#,##0")
-                </span>
-            </div>
 
             <div class="category-list-wrap">
                 <div class="category-list">
@@ -84,27 +77,22 @@
 @code {
     private readonly DateTime Now = DateTime.Now;
 
-    private decimal MonthlyBudget;
-    private List<GastaApp.Services.CategoryBudgetRow> CategoryRows = new();
+    private List<Gasta.Services.CategoryBudgetRow> CategoryRows = new();
     private readonly Dictionary<int, decimal> _edits = new();
 
     private bool ShowKeypad;
     private int? _editingCategoryId;
-    private bool _editingOverall;
-
-    private decimal AllocatedTotal => _edits.Values.Sum();
-
-    private decimal KeypadInitialValue => _editingOverall
-        ? MonthlyBudget
-        : (_editingCategoryId.HasValue ? GetAmount(_editingCategoryId.Value) : 0);
-
     private bool ShowCopySheet;
+
+    // The monthly budget is no longer its own editable value — it's always the sum
+    // of the category budgets, so the two can never disagree.
+    private decimal MonthlyBudget => _edits.Values.Sum();
+
+    private decimal KeypadInitialValue =>
+        _editingCategoryId.HasValue ? GetAmount(_editingCategoryId.Value) : 0;
 
     protected override async Task OnInitializedAsync()
     {
-        var summary = await SummaryService.GetMonthSummaryAsync(Now.Year, Now.Month);
-        MonthlyBudget = summary.Budget;
-
         CategoryRows = await SummaryService.GetCategoryBudgetRowsAsync(Now.Year, Now.Month);
         foreach (var row in CategoryRows)
         {
@@ -114,34 +102,28 @@
 
     private decimal GetAmount(int categoryId) => _edits.TryGetValue(categoryId, out var v) ? v : 0;
 
-    private void OpenKeypad(int? categoryId)
+    private void OpenKeypad(int categoryId)
     {
         _editingCategoryId = categoryId;
-        _editingOverall = categoryId is null;
         ShowKeypad = true;
     }
 
     private void OnKeypadConfirmed(decimal value)
     {
-        if (_editingOverall)
-        {
-            MonthlyBudget = value;
-        }
-        else if (_editingCategoryId.HasValue)
+        if (_editingCategoryId.HasValue)
         {
             _edits[_editingCategoryId.Value] = value;
         }
     }
 
-    private void ApplyCopiedBudgets((decimal Budget, List<GastaApp.Services.CategoryBudgetRow> Rows) copied)
+    private void ApplyCopiedBudgets((decimal Budget, List<Gasta.Services.CategoryBudgetRow> Rows) copied)
     {
-        MonthlyBudget = copied.Budget;
+        // copied.Budget is intentionally ignored now — the total is recomputed from
+        // the category rows. Nothing is saved yet; the user still taps Save.
         foreach (var row in copied.Rows)
         {
             _edits[row.CategoryId] = row.Amount;
         }
-        // Nothing is saved yet — the user still reviews and taps Save, same as any
-        // other edit on this page.
     }
 
     private async Task Save()

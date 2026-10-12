@@ -5,7 +5,7 @@
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.25s ease;
-    z-index: 20; 
+    z-index: 20;
 }
 
     .sheet-scrim.open {
@@ -51,12 +51,11 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 14px;
-} 
+}
 
 .sheet-title {
     font-weight: bold;
     font-size: 1rem;
-    font-family: var(--font-display);
 }
 
 .banner-title {
@@ -64,7 +63,6 @@
     font-weight: bold;
     font-size: 0.875rem;
     letter-spacing: 0.3px;
-    font-family: var(--font-display);
 }
 
 .close-btn {
@@ -115,7 +113,7 @@
 }
 
     .field-input.tappable {
-        cursor: pointer; 
+        cursor: pointer;
         justify-content: space-between;
     }
 
@@ -135,7 +133,6 @@
         font-family: inherit;
         color: var(--text-primary);
     }
-
 
 .date-field-wrap {
     position: relative;
