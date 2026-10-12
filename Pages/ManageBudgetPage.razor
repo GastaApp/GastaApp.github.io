@@ -1,5 +1,5 @@
 @page "/managebudget"
-@inject Gasta.Services.ExpenseSummaryService SummaryService
+@inject GastaApp.Services.ExpenseSummaryService SummaryService
 @inject NavigationManager Nav
 
 <div class="budget-page">
@@ -77,7 +77,7 @@
 @code {
     private readonly DateTime Now = DateTime.Now;
 
-    private List<Gasta.Services.CategoryBudgetRow> CategoryRows = new();
+    private List<GastaApp.Services.CategoryBudgetRow> CategoryRows = new();
     private readonly Dictionary<int, decimal> _edits = new();
 
     private bool ShowKeypad;
@@ -116,7 +116,7 @@
         }
     }
 
-    private void ApplyCopiedBudgets((decimal Budget, List<Gasta.Services.CategoryBudgetRow> Rows) copied)
+    private void ApplyCopiedBudgets((decimal Budget, List<GastaApp.Services.CategoryBudgetRow> Rows) copied)
     {
         // copied.Budget is intentionally ignored now — the total is recomputed from
         // the category rows. Nothing is saved yet; the user still taps Save.
