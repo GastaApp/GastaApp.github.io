@@ -80,6 +80,20 @@ html, body {
     transition: background 0.2s ease, color 0.2s ease;
 }
 
+/* Bottom sheets are position:fixed with left:0/right:0, so without a cap they span
+   the whole browser window on desktop while the app itself is capped at 480px.
+   Same max-width + auto-margin trick .bottom-nav already uses. Scrims are left
+   alone on purpose so they still dim the whole page. This lives in the global
+   file because none of the scoped sheet stylesheets set max-width or margin, so
+   there's nothing for it to conflict with. */
+.sheet-panel,
+.picker-sheet,
+.keypad-sheet {
+    max-width: 480px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 strong {
     font-family: var(--font-display);
     font-weight: 500;
