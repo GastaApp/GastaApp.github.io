@@ -1,5 +1,10 @@
+/* Width comes from --content-max (theme.css): 480px on phones (unchanged), 640px from
+   600px up, 760px from 900px up. Padding is intentionally a fixed 20px at every width —
+   the sticky headers on Home / AllTransactions / Settings / ManageCategories /
+   ManagePaymentMethods cancel it with margin:-20px, and ManageBudgetPage sizes itself
+   against it (see that file's comment). Change it here only together with those. */
 .app-content {
-    max-width: 480px;
+    max-width: var(--content-max, 480px);
     margin: 0 auto;
     padding: 20px;
     padding-bottom: 110px; /* clears the full-width nav so content never hides behind it */
@@ -10,7 +15,7 @@
     bottom: 0;
     left: 0;
     right: 0;
-    max-width: 480px;
+    /*max-width: var(--content-max, 480px);*/
     margin: 0 auto;
     background: var(--nav-bg);
     border-radius: 0;
@@ -81,4 +86,27 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+}
+
+/* Wide screens (desktop windows, iPad landscape): a full-width bar pinned to the
+   bottom of a 1000px+ window looks stranded, so it becomes a slim rail on the left
+   edge. Same items, same order, same styling — only the axis changes. The content
+   column stays centered in the window; at 1024px it starts at x=132, clear of the
+   84px rail. .app-content's bottom padding is left alone on purpose (ManageBudgetPage
+   depends on it); it only shows as a little extra space under the last item. */
+@media (min-width: 1024px) {
+    .bottom-nav {
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: auto;
+        width: 84px;
+        max-width: none;
+        margin: 0;
+        flex-direction: column;
+        justify-content: center;
+        gap: 18px;
+        padding: 20px 0;
+        border-right: 1px solid var(--border);
+    }
 }

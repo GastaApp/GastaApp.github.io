@@ -40,6 +40,31 @@
     --shadow-chip: 0 3px 3px rgba(43, 33, 28, 0.14);
     --nav-bg: #EFEDFA;
     --nav-active-bg: #C9C2F5;
+    /* Layout tiers. Phone (< 600px) is exactly the original 480px design.
+       --content-max: width of the centered page column AND the bottom nav.
+       --sheet-max:   width cap for bottom sheets / pickers / keypad.
+       Page padding is deliberately NOT tokenised: several sticky headers use
+       margin:-20px to cancel .app-content's 20px padding, and ManageBudget sizes
+       itself against it, so that value stays fixed at every width. */
+    --content-max: 480px;
+    --sheet-max: 480px;
+}
+
+/* Tablet / iPad portrait and up. Custom properties can't be used inside media
+   queries, so the breakpoints (600 / 900 / 1024) are repeated literally here and in
+   MainLayout.razor.css / Home.razor.css — keep them in sync. */
+@media (min-width: 600px) {
+    :root {
+        --content-max: 640px;
+        --sheet-max: 560px;
+    }
+}
+
+@media (min-width: 900px) {
+    :root {
+        --content-max: 760px;
+        --sheet-max: 600px;
+    }
 }
 
 [data-theme="dark"] {
@@ -89,7 +114,7 @@ html, body {
 .sheet-panel,
 .picker-sheet,
 .keypad-sheet {
-    max-width: 480px;
+    max-width: var(--sheet-max, 480px);
     margin-left: auto;
     margin-right: auto;
 }

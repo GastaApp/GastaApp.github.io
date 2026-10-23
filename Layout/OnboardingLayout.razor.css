@@ -1,7 +1,11 @@
-﻿.onboarding-shell {
+﻿/* Stays 480px at every width on purpose: onboarding is built from small centered
+   blocks (280-320px) plus a Back/Next row that spans the whole shell, so a wider
+   shell only pushes those two buttons far apart without improving anything. */
+.onboarding-shell {
     max-width: 480px;
     margin: 0 auto;
     min-height: 100vh;
+    min-height: 100dvh; /* iPad/Android browsers: 100vh ignores the collapsing toolbar */
     display: flex;
     flex-direction: column;
     background: var(--page-bg);

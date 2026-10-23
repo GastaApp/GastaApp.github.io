@@ -441,3 +441,19 @@
         color: var(--danger);
         font-weight: 600;
     }
+
+/* Tablet / iPad and up. Phones (< 600px) keep the original 2-column layout.
+   auto-fill instead of a fixed count so any number of categories / payment methods
+   (users can add their own) fills the wider column without a stranded last row.
+   Breakpoint matches theme.css (--content-max steps up at 600px). */
+@media (min-width: 600px) {
+    .category-grid {
+        grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+        gap: 20px 16px;
+    }
+
+    .chip-grid {
+        grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
+        gap: 12px;
+    }
+}
